@@ -5,13 +5,13 @@
 <p align="center">
   <a href="#quickstart"><strong>Quickstart</strong></a> &middot;
   <a href="#catálogo-de-squads"><strong>Catálogo</strong></a> &middot;
-  <a href="https://github.com/SynkraAI/aiox-squads"><strong>GitHub</strong></a> &middot;
-  <a href="https://github.com/SynkraAI/aiox-squads/discussions"><strong>Discussões</strong></a>
+  <a href="https://github.com/SynkraAI/aiox-community-squads"><strong>GitHub</strong></a> &middot;
+  <a href="https://github.com/SynkraAI/aiox-community-squads/discussions"><strong>Discussões</strong></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/SynkraAI/aiox-squads/blob/main/LICENSE"><img src="https://img.shields.io/badge/licença-MIT-blue" alt="MIT License" /></a>
-  <a href="https://github.com/SynkraAI/aiox-squads/stargazers"><img src="https://img.shields.io/github/stars/SynkraAI/aiox-squads?style=flat" alt="Stars" /></a>
+  <a href="https://github.com/SynkraAI/aiox-community-squads/blob/main/LICENSE"><img src="https://img.shields.io/badge/licença-MIT-blue" alt="MIT License" /></a>
+  <a href="https://github.com/SynkraAI/aiox-community-squads/stargazers"><img src="https://img.shields.io/github/stars/SynkraAI/aiox-community-squads?style=flat" alt="Stars" /></a>
 </p>
 
 <p align="center">
@@ -126,8 +126,8 @@ npx aios-core init meu-projeto
 *download-squad copy
 
 # Opção 2: Manual
-git clone https://github.com/SynkraAI/aiox-squads.git
-cp -r aiox-squads/squads/copy ./squads/copy
+git clone https://github.com/SynkraAI/aiox-community-squads.git
+cp -r aiox-community-squads/squads/copy ./squads/copy
 ```
 
 ### Usar

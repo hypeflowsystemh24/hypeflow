@@ -76,7 +76,7 @@ Add to the existing `"Stop"` array. If `"Stop"` key doesn't exist, create it.
 ```json
 {
   "type": "command",
-  "command": "node {PROJECT_ROOT}/squads/kaizen-v2/scripts/stop-capture.cjs",
+  "command": "node \"{PROJECT_ROOT}/squads/kaizen-v2/scripts/stop-capture.cjs\"",
   "timeout": 5
 }
 ```
@@ -96,7 +96,7 @@ Add new `"SessionStart"` key if it doesn't exist:
     "hooks": [
       {
         "type": "command",
-        "command": "node {PROJECT_ROOT}/squads/kaizen-v2/scripts/session-briefing.cjs",
+        "command": "node \"{PROJECT_ROOT}/squads/kaizen-v2/scripts/session-briefing.cjs\"",
         "timeout": 3
       }
     ]
@@ -124,7 +124,7 @@ After editing, the `hooks` section in `.claude/settings.json` should contain:
           { /* ...existing stop-session-learnings.cjs... */ },
           {
             "type": "command",
-            "command": "node {PROJECT_ROOT}/squads/kaizen-v2/scripts/stop-capture.cjs",
+            "command": "node \"{PROJECT_ROOT}/squads/kaizen-v2/scripts/stop-capture.cjs\"",
             "timeout": 5
           }
         ]
@@ -136,7 +136,7 @@ After editing, the `hooks` section in `.claude/settings.json` should contain:
         "hooks": [
           {
             "type": "command",
-            "command": "node {PROJECT_ROOT}/squads/kaizen-v2/scripts/session-briefing.cjs",
+            "command": "node \"{PROJECT_ROOT}/squads/kaizen-v2/scripts/session-briefing.cjs\"",
             "timeout": 3
           }
         ]
@@ -164,7 +164,7 @@ If empty (patterns: []), seed with at least 5 verified patterns from project kno
 
 Run manually with test data:
 ```bash
-echo '{"session_id":"install-test","stop_hook_active":false,"last_assistant_message":"kaizen-v2 instalado com sucesso. decidimos usar patterns.yaml para persistência."}' | node squads/kaizen-v2/scripts/stop-capture.cjs
+echo '{"session_id":"install-test","stop_hook_active":false,"last_assistant_message":"kaizen-v2 instalado com sucesso. decidimos usar patterns.yaml para persistência."}' | node "squads/kaizen-v2/scripts/stop-capture.cjs"
 ```
 
 Verify:
@@ -176,7 +176,7 @@ Verify:
 
 Run manually:
 ```bash
-echo '{}' | node squads/kaizen-v2/scripts/session-briefing.cjs
+echo '{}' | node "squads/kaizen-v2/scripts/session-briefing.cjs"
 ```
 
 Verify:

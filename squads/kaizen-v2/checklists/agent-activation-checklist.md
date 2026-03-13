@@ -7,7 +7,7 @@
 
 ### Contexto do Agente
 
-- [ ] Agente existe em `squads/kaizen/agents/`
+- [ ] Agente existe em `squads/kaizen-v2/agents/`
 - [ ] Agente tem persona completa (role, style, identity, focus)
 - [ ] Agente tem frameworks operacionais documentados
 - [ ] Agente tem heurísticas com IDs únicos (IN_XX_NNN)

@@ -31,7 +31,7 @@ phases:
       - step: 1.3
         name: "Extract Learnings"
         task: "tasks/capture-daily.md"
-        output: "daily/YYYY-MM-DD.yaml"
+        output: "data/intelligence/daily/YYYY-MM-DD.yaml"
 
   - phase: 2
     name: "Validate"

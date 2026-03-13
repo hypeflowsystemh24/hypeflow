@@ -59,13 +59,13 @@ phases:
 
       - step: 3.2
         name: "Update patterns.yaml"
-        action: "Merge new patterns, update decay, archive < 0.1"
+        action: "Merge new patterns, update decay scores"
         output: "Updated data/intelligence/knowledge/patterns.yaml"
 
       - step: 3.3
         name: "Flag Patterns for Archive"
         condition: "decay_score < 0.1"
-        action: "Add to next compact-archive run"
+        action: "Flag patterns with archive_candidate: true for next compact-archive run (do NOT archive immediately)"
 
 quality_gates:
   - gate: "patterns_valid"
@@ -102,4 +102,4 @@ scheduling:
 
 next_workflow:
   - "Manual: *report weekly (user-triggered)"
-  - "Quarterly: wf-install.yaml compact-archive phase"
+  - "Quarterly: compact-archive task (tasks/compact-archive.md)"

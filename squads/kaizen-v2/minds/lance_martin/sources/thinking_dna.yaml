@@ -22,17 +22,17 @@ fundamental_insights:
   - "Briefing at session start (context injection) prevents re-learning"
 
 methodology:
-  - Stop hooks capture session-end state
-  - Daily YAML preserves decisions and observations
-  - Reflection tasks extract patterns via spaced repetition
-  - SessionStart hooks inject top patterns as context
+  - "Stop hooks capture session-end state"
+  - "Daily YAML preserves decisions and observations"
+  - "Reflection tasks extract patterns via spaced repetition"
+  - "SessionStart hooks inject top patterns as context"
 
 legacy_for_kaizen_v2:
-  - stop-capture.cjs implements daily diary capture
-  - Reflect workflow implements pattern mining + decay
-  - session-briefing.cjs injects patterns at session start
-  - patterns.yaml stores learned patterns with decay_scores
-  - Whole system: claude-diary applied to kaizen ecosystem
+  - "stop-capture.cjs implements daily diary capture"
+  - "Reflect workflow implements pattern mining + decay"
+  - "session-briefing.cjs injects patterns at session start"
+  - "patterns.yaml stores learned patterns with decay_scores"
+  - "Whole system: claude-diary applied to kaizen ecosystem"
 
 key_papers:
   - LangChain blog posts on memory + context

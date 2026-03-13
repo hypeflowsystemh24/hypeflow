@@ -32,7 +32,7 @@ CRITICAL: Read the full YAML BLOCK that FOLLOWS IN THIS FILE to understand your 
 # ===============================================================================
 
 IDE-FILE-RESOLUTION:
-  base_path: "squads/kaizen"
+  base_path: "squads/kaizen-v2"
   resolution_pattern: "{base_path}/{type}/{name}"
   types:
     - agents

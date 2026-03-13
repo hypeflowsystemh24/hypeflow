@@ -40,7 +40,7 @@ task:
 
 ### Phase 1: Daily Rotation
 1. List all files in `data/intelligence/daily/`
-2. Filter: files with modification date > 90 days old
+2. Filter: files whose **filename date** (YYYY-MM-DD from the `YYYY-MM-DD.yaml` naming convention) is > 90 days old. Do NOT use filesystem mtime — it can be unreliable after git clone, copy, or restore operations.
 3. Create `data/intelligence/archive/dailies/` if missing
 4. Move filtered files to `archive/dailies/YYYY-MM/`
 5. Log: N files archived, date range
@@ -49,8 +49,8 @@ task:
 1. Load `patterns.yaml`
 2. Create backup: `cp patterns.yaml patterns.yaml.bak`
 3. For each pattern:
-   - If `decay_score < 0.1`: Move to `archive/patterns.yaml.archive`
    - If `decay_score < 0.05`: Delete entirely + log to audit.log
+   - Else if `0.05 <= decay_score < 0.1`: Move to `archive/patterns.yaml.archive`
    - Else: Keep in active patterns.yaml
 4. Update metadata: total_patterns, archived_patterns, deleted_patterns
 5. Log: N patterns archived, N patterns deleted
@@ -80,6 +80,7 @@ Generate `archive/cleanup-YYYY-MM-DD.log`:
 ```
 
 ### Constraints
+- Delete: decay < 0.05 (mutually exclusive with archive: 0.05 <= decay < 0.1)
 - Never delete patterns with `verified: true` (high confidence) without warning
 - Always create backup before deletions
 - Never run while reflect.md is executing (mutex lock)

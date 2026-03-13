@@ -85,3 +85,4 @@ baseline:
     fix_commits: 3
     docs_commits: 4
     chore_commits: 3
+    refactor_commits: 4

@@ -14,10 +14,10 @@ Technical guide for hooks, troubleshooting, and configuration.
 ```json
 {
   "hooks": {
-    "PreToolUse": [
+    "Stop": [
       {
         "name": "kaizen-v2-stop-capture",
-        "type": "StopToolUse",
+        "type": "command",
         "command": "node squads/kaizen-v2/scripts/stop-capture.cjs"
       }
     ]

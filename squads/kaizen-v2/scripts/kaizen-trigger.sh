@@ -5,7 +5,7 @@
 # quando o Kaizen Squad deveria ser ativado.
 #
 # Uso:
-#   bash squads/kaizen/scripts/kaizen-trigger.sh
+#   bash squads/kaizen-v2/scripts/kaizen-trigger.sh
 #
 # Exit codes:
 #   0 = Nenhum trigger detectado

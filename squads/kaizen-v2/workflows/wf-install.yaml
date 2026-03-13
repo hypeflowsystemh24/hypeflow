@@ -35,11 +35,16 @@ phases:
         action: "If missing, create minimal settings.json"
         output: ".claude/settings.json exists"
 
+      - step: 2.1b
+        name: "Backup .claude/settings.json"
+        action: "cp .claude/settings.json .claude/settings.json.bak.$(date +%Y%m%d%H%M%S)"
+        output: "Backup created for rollback"
+
       - step: 2.2
         name: "Merge Stop Hook"
         source: "config/config.yaml"
         hook: "kaizen-v2-stop-capture"
-        action: "Append to hooks.PreToolUse"
+        action: "Append to hooks.Stop"
         output: "Hook registered"
 
       - step: 2.3
@@ -104,7 +109,7 @@ quality_gates:
   - gate: "dirs_initialized"
     description: "All intelligence directories created"
     pass: "PROCEED"
-    fail: "ABORT — directory creation failed"
+    fail: "WARN — directory creation failed, continue with fallback (user manual creation)"
 
   - gate: "patterns_yaml_valid"
     description: "patterns.yaml exists and is valid YAML"
@@ -137,7 +142,7 @@ success_criteria:
   - User can run `/kaizen-v2:*health` immediately
 
 rollback_plan:
-  - If hooks_registered fails: No settings.json changes made (safe)
+  - If hooks_registered fails: Restore settings.json from backup (step 2.1b)
   - If dirs fail: Dirs can be manually created
   - If patterns.yaml fails: Restore from squads/kaizen-v2/ template
   - If any fatal error: User can re-run *install (idempotent)

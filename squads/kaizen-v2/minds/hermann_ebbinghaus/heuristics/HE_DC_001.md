@@ -17,6 +17,9 @@ HE_DC_001:
   phase: "pattern-lifecycle"
   pattern_reference: "HE-CORE-001"
 
+  # Prioritization weights — used to rank factors when breaking ties
+  # or selecting which patterns to surface in briefing. NOT used in the
+  # exponential decay formula (decay_score = e^(-rate * days)).
   weights:
     days_since_observed: 0.9     # principal fator de decay
     verification_count: 0.85     # patterns verificados decaem mais lento

@@ -58,7 +58,7 @@ DECISION SIGNALS (capturados no daily):
   - "escolhemos", "priorizamos"
 
 AGENT SIGNALS (capturados no daily):
-  - Regex: @[a-z\-]+ no last_assistant_message
+  - Regex: @[a-z0-9\-:]+ no last_assistant_message
   - Indica quais agentes participaram da sessão
 ```
 

@@ -43,7 +43,7 @@ KAIZEN-V2 APLICAÇÃO:
   - Pattern usado pelo agente = reforço natural
   - Reflect semanal = revisão sistemática de todos patterns
   - Decay < 0.3 = pattern sai do briefing (sem revisão)
-  - Decay < 0.1 = archive (esquecimento funcional)
+  - 0.05 <= Decay < 0.1 = archive (esquecimento funcional)
   - Decay < 0.05 = delete (esquecimento completo)
 ```
 
@@ -56,8 +56,8 @@ FRESH          1.00      Pattern ativo no briefing
 ATIVO          0.70      Aparece normalmente
 MORNO          0.50      Ainda no briefing
 FRIO           0.22      Sai do briefing (< 0.3)
-ARCHIVE        0.10      Movido para archive/
-DELETE         0.05      Removido do sistema
+ARCHIVE        0.05-0.10 Movido para archive/
+DELETE         <0.05     Removido do sistema
 ```
 
 ## Application

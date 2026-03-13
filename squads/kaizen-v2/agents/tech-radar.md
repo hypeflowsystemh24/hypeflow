@@ -29,7 +29,7 @@ CRITICAL: Read the full YAML BLOCK that FOLLOWS IN THIS FILE to understand your 
 # ===============================================================================
 
 IDE-FILE-RESOLUTION:
-  base_path: "squads/kaizen"
+  base_path: "squads/kaizen-v2"
   resolution_pattern: "{base_path}/{type}/{name}"
   types:
     - agents
@@ -860,7 +860,7 @@ scanning_protocol:
     purpose: "Map which squads depend on which tools"
 
   last_evaluation:
-    command: "git log -1 --format='%ai' -- squads/kaizen/data/radar-state.yaml 2>/dev/null"
+    command: "git log -1 --format='%ai' -- squads/kaizen-v2/data/radar-state.yaml 2>/dev/null"
     purpose: "Find when the radar was last updated"
 
   full_radar_scan:

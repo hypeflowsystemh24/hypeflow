@@ -1,38 +1,33 @@
 ---
-task: costAnalysis()
-responsavel: "CostAnalyst"
-responsavel_type: Agente
-atomic_layer: Molecule
-Entrada:
-  - nome: tool_inventory
-    tipo: object
-    obrigatorio: true
-  - nome: usage_metrics
-    tipo: object
-    obrigatorio: true
-Saida:
-  - nome: cost_report
-    tipo: markdown
-    obrigatorio: true
-Checklist:
-  - Catalogar custos por ferramenta/servico
-  - Aplicar Activity-Based Costing (Kaplan)
-  - Calcular ROI por ferramenta
-  - Identificar desperdicio e oportunidades de consolidacao
-  - Gerar recomendacoes de otimizacao priorizadas por impacto
----
-
-# Task: Cost Analysis
-# ID: KZ-TP-004
-# Executor: cost-analyst
-# Trigger: *cost command or weekly cadence
-
 task:
   name: "Cost Analysis"
+  id: "KZ-TP-004"
   status: ready
   responsible_executor: cost-analyst
   execution_type: agent
   elicit: false
+  atomic_layer: Molecule
+  input_schema:
+    - nome: tool_inventory
+      tipo: object
+      obrigatorio: true
+    - nome: usage_metrics
+      tipo: object
+      obrigatorio: true
+  output_schema:
+    - nome: cost_report
+      tipo: markdown
+      obrigatorio: true
+  checklist:
+    - Catalogar custos por ferramenta/servico
+    - Aplicar Activity-Based Costing (Kaplan)
+    - Calcular ROI por ferramenta
+    - Identificar desperdicio e oportunidades de consolidacao
+    - Gerar recomendacoes de otimizacao priorizadas por impacto
+  trigger: "*cost command or weekly cadence"
+---
+
+# Task: Cost Analysis
 
   description: |
     Analyze costs across the ecosystem using FinOps principles.
@@ -79,6 +74,8 @@ task:
         1. Estimate implementation cost (tokens, time, tools)
         2. Estimate expected value (output improvement, waste reduction)
         3. Calculate ROI = (value - cost) / cost
+           NOTE: If cost is zero, ROI is undefined. Report as "∞ (zero-cost)"
+           and rank these recommendations at the top (pure value, no investment).
         4. Rank recommendations by ROI
 
   output:

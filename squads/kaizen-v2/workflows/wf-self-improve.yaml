@@ -53,7 +53,7 @@ workflow:
       steps:
         - id: "0.1"
           name: "Ler relatórios anteriores"
-          action: "Glob squads/kaizen/data/reports/week-*.md"
+          action: "Glob squads/kaizen-v2/data/reports/week-*.md"
           output: "previous_reports"
 
         - id: "0.2"
@@ -67,7 +67,7 @@ workflow:
         - id: "0.3"
           name: "Analisar atividade do próprio squad"
           action: |
-            1. git log com filtro squads/kaizen/ — frequência de uso
+            1. git log com filtro squads/kaizen-v2/ — frequência de uso
             2. Quais comandos foram executados (chief, analyze, gaps, etc.)
             3. Quais agentes nunca foram ativados
           output: "usage_data"

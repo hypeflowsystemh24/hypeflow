@@ -43,7 +43,7 @@ Gerado pelo Kaizen Squad (Capability Mapper + Pedro Valerio audit).
 ```text
 kaizen *gaps → detecta gap CRITICAL
   → gera recruitment-brief.md automaticamente
-    → salva em squads/kaizen/data/briefs/
+    → salva em squads/kaizen-v2/data/briefs/
       → notifica usuario: "Gap detectado. Brief pronto para squad-creator."
 ```
 

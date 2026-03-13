@@ -26,7 +26,7 @@
 ## Reflection Output
 
 - [ ] 13. Reflection markdown generated with all sections
-- [ ] 14. New patterns listed with decay_score + verification_count
+- [ ] 14. New patterns listed with decay_score (+ verification_count if available)
 - [ ] 15. Reinforced patterns listed
 - [ ] 16. Archive candidates listed
 - [ ] 17. Reflection file saved to `data/intelligence/reflections/`

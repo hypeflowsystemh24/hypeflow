@@ -40,10 +40,10 @@ task:
     agentes estão subutilizados, e onde as heurísticas precisam de calibração.
 
   input:
-    - "squads/kaizen/data/reports/ — relatórios anteriores"
-    - "squads/kaizen/data/baselines/ — baseline atual"
-    - "git log squads/kaizen/ — atividade do squad"
-    - "squads/kaizen/CHANGELOG.md — histórico de mudanças"
+    - "squads/kaizen-v2/data/reports/ — relatórios anteriores"
+    - "squads/kaizen-v2/data/baselines/ — baseline atual"
+    - "git log squads/kaizen-v2/ — atividade do squad"
+    - "squads/kaizen-v2/CHANGELOG.md — histórico de mudanças"
 
   steps:
     - id: "1"

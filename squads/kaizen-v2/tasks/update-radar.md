@@ -44,7 +44,7 @@ task:
   input:
     - "squads/*/config/config.yaml — tools referenced by squads"
     - "squads/*/agents/*.md — tools/APIs used by agents"
-    - "squads/kaizen/data/radar/ — previous radar state"
+    - "squads/kaizen-v2/data/radar/ — previous radar state"
     - "Capability gaps from capability-mapper"
 
   steps:

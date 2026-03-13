@@ -12,7 +12,7 @@
 ## Hook Registration
 
 - [ ] 5. .claude/settings.json readable (or created if missing)
-- [ ] 6. Stop hook (kaizen-v2-stop-capture) registered in PreToolUse
+- [ ] 6. Stop hook (kaizen-v2-stop-capture) registered in Stop
 - [ ] 7. SessionStart hook (kaizen-v2-session-briefing) registered in SessionStart
 - [ ] 8. Hook command paths valid and executable
 - [ ] 9. Timeout values configured (Stop: 3s, SessionStart: 1s)

@@ -13,6 +13,12 @@ aios:
   minVersion: "2.1.0"
   type: squad
 
+dependencies:
+  squads:
+    - name: kaizen
+      minVersion: "1.3.0"
+      reason: "v2-specific minds only; v1 minds referenced from kaizen v1.3.0+"
+
 automation_boundary:
   deterministic:
     - "Stop hook → git log do dia → daily YAML"

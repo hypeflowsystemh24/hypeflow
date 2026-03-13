@@ -15,7 +15,7 @@ Saida:
     tipo: markdown
     obrigatorio: true
 Checklist:
-  - Coletar metricas DORA (deployment frequency, lead time, MTTR, change failure rate)
+  - Coletar metricas DORA (task frequency, lead time, MTTR, rework rate)
   - Calcular dimensoes BSC (financeiro, cliente, processos, aprendizado)
   - Rastrear progresso OKR por squad
   - Gerar dashboard formatado com template
@@ -41,7 +41,7 @@ task:
   input:
     - "squads/*/config/config.yaml — squad metadata"
     - "git log -- squads/ — activity history"
-    - "squads/kaizen/data/reports/ — historical reports"
+    - "squads/kaizen-v2/data/reports/ — historical reports"
     - "docs/stories/*.md — story completion status"
 
   steps:

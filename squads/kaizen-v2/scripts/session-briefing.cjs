@@ -226,9 +226,14 @@ function truncateBriefing(briefing) {
   const bytes = Buffer.byteLength(briefing, 'utf8');
   if (bytes <= CONFIG.max_briefing_bytes) return briefing;
 
-  // Truncate to fit
-  const maxChars = CONFIG.max_briefing_bytes - 50;
-  return briefing.substring(0, maxChars) + '\n...(truncated)';
+  // Truncate to fit using byte length (UTF-8 safe)
+  const suffix = '\n...(truncated)';
+  const maxBytes = CONFIG.max_briefing_bytes - Buffer.byteLength(suffix, 'utf8');
+  let truncated = briefing;
+  while (Buffer.byteLength(truncated, 'utf8') > maxBytes) {
+    truncated = truncated.substring(0, truncated.length - 1);
+  }
+  return truncated + suffix;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

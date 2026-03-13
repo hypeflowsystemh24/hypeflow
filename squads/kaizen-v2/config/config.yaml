@@ -98,7 +98,7 @@ tier_structure:
 template_config:
   engine: handlebars
   syntax: "{{variable}}, {{#each}}, {{/each}}, {{^if}}"
-  resolver: "Templates resolve to squads/kaizen/templates/"
+  resolver: "Templates resolve to squads/kaizen-v2/templates/"
   variables_auto_populated:
     - "{{week_number}} — ISO week number from system date"
     - "{{year}} — current year from system date"

@@ -17,7 +17,7 @@ phases:
     steps:
       - step: 1.1
         name: "Detect Project Type"
-        check: "test -d .aios-core/ OR test -d .aiox/"
+        check: "test -d .aios-core/ || test -d .aiox/"
         output: "PROJECT_TYPE = aios | aiox"
         fail_action: "ERROR: Not an AIOS or AIOX project"
 
@@ -117,7 +117,8 @@ quality_gates:
     fail: "ABORT — invalid patterns.yaml"
 
   - gate: "health_check_pass"
-    description: "At least 10/12 health checks pass"
+    description: "All 12/12 health checks pass"
+    minimum_checks_passed: 12
     pass: "INSTALLATION SUCCESS"
     fail: "WARN — some checks failing, remediation provided"
 
@@ -138,7 +139,7 @@ success_criteria:
   - Overall status: SUCCESS (< 5 minutes total time)
   - Hooks registered in .claude/settings.json
   - All intelligence directories exist
-  - At least 10/12 health checks pass
+  - All 12/12 health checks pass
   - User can run `/kaizen-v2:*health` immediately
 
 rollback_plan:

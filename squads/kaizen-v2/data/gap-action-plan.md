@@ -73,7 +73,7 @@ kaizen_context:
 - [ ] Adicionar output automatico de brief no task detect-gaps.md
 - [ ] Criar template recruitment-brief-tmpl.yaml
 - [ ] Adicionar comando `*generate-brief` ao capability-mapper
-- [ ] Testar fluxo end-to-end: *gaps → brief → squad-creator *create-agent
+- [ ] Testar fluxo end-to-end: `*gaps` → brief → squad-creator `*create-agent`
 
 ---
 

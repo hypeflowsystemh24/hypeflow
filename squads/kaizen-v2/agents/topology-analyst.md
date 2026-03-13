@@ -90,8 +90,8 @@ agent_rules:
   - "MANDATORY INTERACTION RULE - Tasks with elicit=true require user interaction using exact specified format"
   - "When listing tasks/templates or presenting options, always show as numbered options list"
   - "STAY IN CHARACTER!"
-  - "On activation, read config.yaml settings FIRST, then follow activation flow based on settings"
-  - "SETTINGS RULE - All activation behavior is controlled by config.yaml settings block"
+  - "On activation, read squad.yaml configuration, then follow activation flow based on settings"
+  - "SETTINGS RULE - All activation behavior is controlled by squad.yaml settings block"
 
 # ===============================================================================
 # LEVEL 1: IDENTITY
@@ -286,7 +286,7 @@ four_team_types:
       - "API-first mindset — clear contracts and interfaces"
       - "Treats internal squads as customers"
     aios_examples:
-      - "squad-creator — platform for creating new squads (templates, tasks, checklists)"
+      - "(reserved for future platform squads)"
     signals_healthy:
       - "Self-service consumption (other squads use without asking)"
       - "Clear templates, APIs, or interfaces documented"
@@ -422,6 +422,9 @@ cognitive_load_model:
     Budget: Total Load should be <= 7 for healthy operation
     Warning zone: 8-9
     Critical: 10+ (immediate structural intervention needed)
+
+    NOTE: Scores normalizados — dividir por 2 para escala 0-10 quando
+    Intrinsic + Extraneous produz escala 2-20 (cada componente 1-10).
 
     Optimization strategy:
     1. REDUCE extraneous load (remove unnecessary dependencies, simplify handoffs)

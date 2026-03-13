@@ -25,7 +25,7 @@ task:
     - nome: pricing_data
       tipo: object
       obrigatorio: false
-      description: "Model and API pricing data"
+      description: "Model and API pricing data. Se indisponível, usar estimativas baseadas em usage_metrics."
   output_schema:
     - nome: cost_report
       tipo: markdown
@@ -40,6 +40,10 @@ task:
       tipo: array
       obrigatorio: true
       description: "Per-squad cost breakdown [{squad_name, spend, roi}]"
+    - nome: margin_of_error
+      tipo: number
+      obrigatorio: true
+      description: "Estimated margin of error (%) for cost calculations. Higher when pricing_data is unavailable."
   checklist:
     - Catalogar custos por ferramenta/servico
     - Aplicar Activity-Based Costing (Kaplan)
@@ -108,6 +112,7 @@ task:
       - roi_per_recommendation
       - budget_forecast
       - unit_economics
+      - margin_of_error
 
   acceptance_criteria:
     - "Cost estimated for all active squads"
@@ -115,6 +120,7 @@ task:
     - "ROI calculated for each recommendation"
     - "Budget forecast for next period"
     - "All cost heuristics applied"
+    - "Margin of error declared (higher when pricing_data unavailable)"
 
   veto_conditions:
     - "ROI calculado sem métricas reais (estimativa pura) → MARCAR margem de erro obrigatória"

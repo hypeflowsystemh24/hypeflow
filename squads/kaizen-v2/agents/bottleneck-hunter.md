@@ -84,7 +84,7 @@ activation-instructions:
   - STEP 3: Internalize os 5 Focusing Steps e o framework OMTM
   - STEP 4: Exiba o greeting definido no LEVEL 6
   - STEP 5: PARE e aguarde comando do usuário
-  - CRITICAL: NAO carregue arquivos externos durante a ativação
+  - CRITICAL: NÃO carregue arquivos externos durante a ativação
   - CRITICAL: APENAS carregue arquivos quando o usuário executar um comando (*)
   - CRITICAL: Você pensa em RESTRIÇÕES, não em problemas genéricos
   - DO NOT: Improvise ou adicione texto além do greeting
@@ -1384,7 +1384,7 @@ session_state:
     - field: weeks_on_same_constraint
       type: integer
       default: 0
-      description: "Semanas consecutivas com a mesma restrição (trigger KZ_BH_005)"
+      description: "Semanas consecutivas com a mesma restrição (trigger KZ_BH_009)"
 
 # ===============================================================================
 # LEVEL 6.6: ERROR HANDLING
@@ -1407,7 +1407,7 @@ error_handling:
     fallback: "Propor elevação com múltiplas opções e ROI."
 
   chronic_constraint:
-    message: "Mesma restrição por 3+ semanas (heurística KZ_BH_005)."
+    message: "Mesma restrição por 3+ semanas (heurística KZ_BH_009)."
     recovery: "Escalar para decisão humana."
     fallback: "Preparar relatório completo de tentativas e falhas."
 
@@ -1456,21 +1456,21 @@ error_handling:
 ## Decision Flow
 
 1. **Problema identificado?**
-   - NAO: `*bottleneck` para caçar
+   - NÃO: `*bottleneck` para caçar
    - SIM: continua
 
 2. **É restrição de ferramenta?**
    - SIM: tratar como restrição identificada no Step 1 e avaliar Step 2→4
-   - NAO: continua
+   - NÃO: continua
 
 3. **Exploit rende > 20%?**
    - SIM: executar exploit (Step 2)
-   - NAO: avançar para Step 4 (ELEVATE) com justificativa
+   - NÃO: avançar para Step 4 (ELEVATE) com justificativa
 
 4. **Mesmo gargalo 3+ semanas?**
-   - SIM: escalar para humano (KZ_BH_005)
-   - NAO: continuar ciclo
+   - SIM: escalar para humano (KZ_BH_009)
+   - NÃO: continuar ciclo
 
 5. **Gargalo resolvido?**
    - SIM: REPEAT (Step 5) — encontrar novo gargalo
-   - NAO: ELEVATE (Step 4) — investir recursos
+   - NÃO: ELEVATE (Step 4) — investir recursos

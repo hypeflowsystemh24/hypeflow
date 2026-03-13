@@ -185,7 +185,11 @@ workflow:
       agents:
         - agent: tech-radar
           task: "Evaluate tools/APIs/MCPs, update radar, run fitness functions"
-          input: "phase_0 outputs + capability_report"
+          input:
+            - "phase_0 outputs"
+            - "capability_report"
+            - "current_radar: data/radar/initial-radar.yaml"
+            - "tool_usage_data: phase_0.usage_data"
           output: "radar_report"
           framework: "Technology Radar + Fitness Functions"
 
@@ -204,7 +208,10 @@ workflow:
       agents:
         - agent: cost-analyst
           task: "Calculate costs, ROI per squad, identify waste"
-          input: "All previous reports"
+          input:
+            - "tool_inventory: radar_report.tool_inventory"
+            - "usage_metrics: performance_report.usage_metrics"
+            - "previous_reports: [topology_report, performance_report, bottleneck_report, capability_report, radar_report]"
           output: "cost_report"
           framework: "FinOps + BSC Financial Perspective"
 

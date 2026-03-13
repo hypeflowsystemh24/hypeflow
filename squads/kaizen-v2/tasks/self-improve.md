@@ -40,16 +40,16 @@ task:
     agentes estão subutilizados, e onde as heurísticas precisam de calibração.
 
   input:
-    - "squads/kaizen-v2/data/reports/ — relatórios anteriores"
-    - "squads/kaizen-v2/data/baselines/ — baseline atual"
+    - "data/reports/ — relatórios anteriores"
+    - "data/baselines/ — baseline atual"
     - "git log squads/kaizen-v2/ — atividade do squad"
-    - "squads/kaizen-v2/CHANGELOG.md — histórico de mudanças"
+    - "CHANGELOG.md — histórico de mudanças"
 
   steps:
     - id: "1"
       name: "Rastrear recomendações anteriores"
       action: |
-        1. Ler todos os relatórios em data/reports/
+        1. Ler todos os relatórios em data/reports/ (relativo ao squad dir)
         2. Extrair recomendações de cada relatório
         3. Para cada: buscar evidência de implementação (git log, novos arquivos)
         4. Classificar: IMPLEMENTADA / IGNORADA / PARCIAL / PENDENTE
@@ -96,8 +96,12 @@ task:
         - Salvar com data atualizada
 
   output:
-    format: "Self-Improvement Report"
-    path: "data/reports/self-improve-{date}.md"
+    - artifact: improvement_report
+      format: "Self-Improvement Report"
+      path: "data/reports/self-improve-{date}.md"
+    - artifact: updated_baseline
+      format: "yaml"
+      path: "data/baselines/ecosystem-baseline.yaml"
 
   acceptance_criteria:
     - "Todas as recomendações anteriores rastreadas"

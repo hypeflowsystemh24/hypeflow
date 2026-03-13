@@ -21,15 +21,16 @@ task:
 
 ### Output
 - **Rotate dailies:** Move `daily/` files > 90 days old to `data/intelligence/archive/dailies/`
-- **Archive patterns:** Move patterns with decay < 0.1 to `data/intelligence/archive/patterns.yaml.archive`
 - **Delete patterns:** Remove patterns with decay < 0.05
+- **Archive patterns:** Move patterns with 0.05 <= decay < 0.1 to `data/intelligence/archive/patterns.yaml.archive`
+- **Keep patterns:** Patterns with decay >= 0.1 remain active
 - **Backup:** Create `patterns.yaml.bak` before modifications
 - Updated `data/intelligence/knowledge/patterns.yaml` (cleaned)
 
 ### Acceptance Criteria
 - [ ] All daily files > 90 days old moved to `data/intelligence/archive/dailies/`
-- [ ] All patterns with decay < 0.1 moved to `data/intelligence/archive/patterns.yaml.archive`
 - [ ] All patterns with decay < 0.05 deleted (with audit log)
+- [ ] All patterns with 0.05 <= decay < 0.1 moved to `data/intelligence/archive/patterns.yaml.archive`
 - [ ] `patterns.yaml.bak` created before cleanup
 - [ ] patterns.yaml metadata updated (total_patterns, deleted_patterns, archived_patterns)
 - [ ] Cleanup log generated with: files archived, patterns archived, patterns deleted
@@ -80,10 +81,10 @@ Generate `data/intelligence/archive/cleanup-YYYY-MM-DD.log`:
 ```
 
 ### Constraints
-- Delete: decay < 0.05 (mutually exclusive with archive: 0.05 <= decay < 0.1)
+- Decay bands (mutually exclusive): `< 0.05` = delete, `0.05 <= decay < 0.1` = archive, `>= 0.1` = keep
 - Never delete patterns with `verified: true` (high confidence) without warning
 - Always create backup before deletions
-- Never run while reflect.md is executing (mutex lock)
+- Mutex: Não executar compact-archive enquanto reflect estiver em andamento
 - Fallback: If deletion fails, leave in active (won't harm, just cluttered)
 
 ## Success Criteria

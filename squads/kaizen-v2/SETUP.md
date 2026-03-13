@@ -104,6 +104,8 @@ intelligence:
 
 ## Troubleshooting
 
+> **Nota:** Os comandos abaixo assumem bash/zsh. No Windows, use Git Bash ou WSL.
+
 ### Stop Hook Not Running
 
 **Symptom:** No daily/YYYY-MM-DD.yaml files created
@@ -202,6 +204,8 @@ rm .aios/logs/kaizen-*.log
 ```
 
 ## Manual Hook Testing
+
+> **Nota:** Os comandos abaixo assumem bash/zsh. No Windows, use Git Bash ou WSL.
 
 ### Test Stop Hook
 

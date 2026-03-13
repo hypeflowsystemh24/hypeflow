@@ -833,7 +833,7 @@ data_collection_protocol:
     purpose: "Identify which models are assigned to which agents"
 
   task_count:
-    command: "ls squads/{squad}/tasks/*.md squads/{squad}/workflows/*.md 2>/dev/null | wc -l"
+    command: "ls squads/{squad}/tasks/*.md squads/{squad}/workflows/*.md squads/{squad}/workflows/*.yaml squads/{squad}/workflows/*.yml 2>/dev/null | wc -l"
     purpose: "Count task types for unit economics calculation"
 
   full_cost_scan:

@@ -53,7 +53,7 @@ workflow:
       steps:
         - id: "0.1"
           name: "Ler relatórios anteriores"
-          action: "Glob data/reports/week-*-*.md"
+          action: "Glob data/reports/week-*-*.md + data/reports/self-improve-*.md"
           output: "previous_reports"
 
         - id: "0.2"
@@ -100,9 +100,10 @@ workflow:
             - São difíceis demais? → Ajustar feasibility threshold
 
         - dimension: "Cobertura de análise"
-          healthy: "Todos os 6 agentes ativados pelo menos 1x/semana"
+          healthy: "Todos os agentes registrados no squad.yaml ativados pelo menos 1x/semana"
           warning: "1-2 agentes nunca ativados"
           critical: "3+ agentes nunca ativados"
+          agent_source: "components.agents from squad.yaml"
           action_if_critical: |
             Agentes subutilizados. Investigar:
             - O domínio é relevante? → Se não, considerar remoção

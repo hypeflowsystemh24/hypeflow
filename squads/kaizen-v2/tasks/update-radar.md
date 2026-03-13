@@ -55,7 +55,7 @@ task:
       name: "Inventory current tools"
       action: |
         1. Scan all squad configs and agent files for tool references
-        2. Categorize into 4 quadrants: APIs, MCPs, Libraries, Models
+        2. Categorize into 4 quadrants: apis, mcps, libraries, ai_models
         3. Count usage frequency per tool
 
     - id: "2"
@@ -130,7 +130,7 @@ task:
       template: "templates/tech-radar-tmpl.md"
 
   acceptance_criteria:
-    - "All tools categorized into quadrants"
+    - "All tools categorized into quadrants (apis, mcps, libraries, ai_models)"
     - "All tools placed in appropriate ring with evidence"
     - "Adopt/Trial tools validated via external research (Step 3)"
     - "Movements documented with rationale"
@@ -146,5 +146,5 @@ task:
 
   action_items:
     - "Run tech-radar *radar"
-    - "Save updated radar to squads/kaizen-v2/data/radar/"
+    - "Save updated radar to data/radar/radar-{date}.yaml"
     - "Hand off tool gap recommendations to kaizen-chief"

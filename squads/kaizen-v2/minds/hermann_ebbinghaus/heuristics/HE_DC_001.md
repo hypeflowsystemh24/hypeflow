@@ -31,7 +31,7 @@ HE_DC_001:
     active: 0.7                  # uso regular
     warm: 0.3                    # ainda relevante
     cold: 0.1                    # sai do briefing
-    archive: 0.1                 # movido para archive/
+    archive: 0.05                # movido para archive/ (0.05 <= decay < 0.1)
     delete: 0.05                 # removido permanentemente
 
   decay_rates:
@@ -71,8 +71,8 @@ PASSO 3: Classificar
   - Ativo (>=0.7): uso regular
   - Morno (>=0.3): ainda no briefing se houver espaço
   - Frio (>=0.1 e <0.3): fora do briefing
-  - Archive (<0.1): mover para archive/
-  - Delete (<0.05): remover permanentemente
+  - Archive (0.05 <= decay < 0.1): mover para archive/
+  - Delete (< 0.05): remover permanentemente
 
 PASSO 4: Agir
   - Archive: mover entry para archive/YYYY-MM.yaml

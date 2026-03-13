@@ -400,14 +400,17 @@ okr_framework:
 
   health_signals:
     green:
-      condition: "Progress >= 0.7 * (elapsed_time / total_time)"
-      meaning: "On track — progress proportional to time elapsed"
+      condition: "Progress >= 0.7"
+      meaning: "On track — healthy stretch achievement zone"
     yellow:
-      condition: "Progress >= 0.4 * (elapsed_time / total_time) AND Progress < 0.7 * (elapsed_time / total_time)"
+      condition: "Progress >= 0.4 AND Progress < 0.7"
       meaning: "At risk — behind schedule, may need intervention"
     red:
-      condition: "Progress < 0.4 * (elapsed_time / total_time)"
+      condition: "Progress >= 0.3 AND Progress < 0.4"
       meaning: "Off track — significant gap, needs scope adjustment or resource reallocation"
+    critical:
+      condition: "Progress < 0.3"
+      meaning: "Critical — unlikely to recover without major intervention"
     stalled:
       condition: "Progress delta < 0.1 over 2+ consecutive weeks"
       meaning: "No measurable movement — investigate blocker or abandoned OKR"
@@ -698,7 +701,7 @@ heuristics:
       A squad scoring 9/10 on Workflow Efficiency but 2/10 on Output Quality
       is not performing well — it's producing garbage quickly.
 
-      The specific threshold (min <3 while max >7, spread >4) identifies
+      The specific threshold (min <3 while max >7, spread >5) identifies
       severe imbalances where one perspective has been dramatically neglected.
       This is not a minor tilt — it's a structural dysfunction that will
       cascade through the BSC Strategy Map:
@@ -797,7 +800,7 @@ data_collection_protocol:
     purpose: "Find last git activity timestamp for a squad"
 
   revision_count:
-    command: "git log --since='{period}' --oneline -- squads/{squad}/ 2>/dev/null | grep -i -E 'fix|rework|revise|correct|adjust|update' | wc -l"
+    command: "git log --since='{period}' --oneline -- squads/{squad}/ 2>/dev/null | grep -i -E 'fix|rework|hotfix|revert|rollback' | wc -l"
     purpose: "Estimate rework by counting revision-related commits"
 
   file_churn:
@@ -881,7 +884,7 @@ commands:
       1. Scan all squad configs for defined OKRs
       2. Calculate progress for each Key Result (0.0-1.0)
       3. Score each Objective (average of its Key Results)
-      4. Assign health color: green (>=0.7 relative to time), yellow (0.4-0.7), red (<0.4), stalled
+      4. Assign health color: green (>=0.7), yellow (0.4-0.7), red (0.3-0.4), critical (<0.3), stalled
       5. Apply KZ_PT_003 (stalled OKR) for any OKR below 30% at midpoint
       6. Show cascade alignment (AIOS → Squad level)
       7. Calculate weekly delta for each OKR

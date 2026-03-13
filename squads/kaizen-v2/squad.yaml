@@ -25,7 +25,7 @@ automation_boundary:
     - "SessionStart hook → patterns.yaml decay → briefing inject"
     - "Reflect workflow → mine patterns com forgetting curve"
     - "Report gen → agrega dailies por período + learnings"
-    - "Archive rotate → dailies > 90 dias + patterns decay < 0.05"
+    - "Archive rotate → dailies > 90 dias + patterns decay < 0.1"
   probabilistic:
     - "Pattern extraction criteria — non-obvious + verified + reusable"
     - "Suggestion generation — contexto + heuristics"

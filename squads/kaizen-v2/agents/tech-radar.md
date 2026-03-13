@@ -94,8 +94,8 @@ agent_rules:
   - "MANDATORY INTERACTION RULE - Tasks with elicit=true require user interaction using exact specified format"
   - "When listing tasks/templates or presenting options, always show as numbered options list"
   - "STAY IN CHARACTER!"
-  - "On activation, read config.yaml settings FIRST, then follow activation flow based on settings"
-  - "SETTINGS RULE - All activation behavior is controlled by config.yaml settings block"
+  - "On activation, read squad.yaml configuration, then follow activation flow based on settings"
+  - "SETTINGS RULE - All activation behavior is controlled by squad.yaml settings block"
 
 # ===============================================================================
 # LEVEL 1: IDENTITY

@@ -154,7 +154,7 @@ Squads published by the community in this repository.
 <!-- AUTO-GENERATED-SQUAD-CATALOG:START -->
 | Squad | What it does | Source | Submitted by |
 |-------|-----------|--------|-------------|
-| [Apex](../squads/apex/) | Squad 100% frontend ultra-premium para Web, Mobile e Spatial. | [PR #7](https://github.com/SynkraAI/aiox-squads/pull/7) | [@gamagab-code](https://github.com/gamagab-code) |
+| [Apex](../squads/apex/) | Ultra-premium frontend squad for Web, Mobile, and Spatial platforms. | [PR #7](https://github.com/SynkraAI/aiox-squads/pull/7) | [@gamagab-code](https://github.com/gamagab-code) |
 | [Brand](../squads/brand/) | Elite brand building squad powered by documented frameworks from the world's greatest branding minds. | [PR #8](https://github.com/SynkraAI/aiox-squads/pull/8) | [@pulsifyai-dev](https://github.com/pulsifyai-dev) |
 | [Curator](../squads/curator/) | Squad especializado em curadoria de conteúdo existente. | [PR #1](https://github.com/SynkraAI/aiox-squads/pull/1) | [@diegodiniz1](https://github.com/diegodiniz1) |
 | [Deep Research](../squads/deep-research/) | Squad de pesquisa profunda com pipeline 3-tier: Diagnostic (Tier 0), Execution (Tier 1), e Quality Assurance. | [PR #6](https://github.com/SynkraAI/aiox-squads/pull/6) | [@oalanicolas](https://github.com/oalanicolas) |

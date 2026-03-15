@@ -538,6 +538,18 @@ thinking_dna:
           - "Define size-adjusted fallback: @font-face with size-adjust, ascent-override"
           - "Minimize CLS by matching fallback metrics to web font metrics"
 
+    decision_matrix:
+      image_below_fold: "lazy loading (loading='lazy')"
+      image_above_fold_lcp: "eager loading + fetchpriority='high'"
+      component_heavy_below_fold: "React.lazy + Suspense"
+      component_heavy_above_fold: "static import (no lazy)"
+      third_party_non_critical: "defer or async script"
+      third_party_critical_path: "preload + inline critical"
+      animation_layout_property: "transform/opacity only (GPU composite)"
+      animation_non_layout_safe: "VETO — triggers layout thrash"
+      bundle_over_budget: "code split at route level"
+      state_causing_rerender: "useMemo/useCallback or state colocation"
+
   heuristics:
     decision:
       - id: "PERF001"
@@ -895,6 +907,18 @@ dependencies:
     - name: "perf-budget-setup"
       path: "tasks/perf-budget-setup.md"
       description: "Performance budget configuration and CI enforcement"
+
+    - name: "font-loading-strategy"
+      path: "tasks/font-loading-strategy.md"
+      description: "Font loading optimization (subsetting, preload, font-display, CLS prevention)"
+
+    - name: "code-splitting-architecture"
+      path: "tasks/code-splitting-architecture.md"
+      description: "Code splitting strategy with route/component splitting and prefetch"
+
+    - name: "hydration-optimization"
+      path: "tasks/hydration-optimization.md"
+      description: "SSR hydration optimization (selective, progressive, RSC boundaries)"
 
   checklists:
     - name: "perf-review-checklist"

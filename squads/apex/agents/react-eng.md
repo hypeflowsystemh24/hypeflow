@@ -566,6 +566,18 @@ thinking_dna:
           return { state, derived, ...actions }
         }
 
+    decision_matrix:
+      data_fetching_no_interaction: "Server Component (RSC)"
+      data_fetching_with_interaction: "Client Component with server action"
+      static_content_no_state: "Server Component (RSC)"
+      needs_browser_api: "Client Component ('use client')"
+      needs_event_handlers: "Client Component ('use client')"
+      shared_state_across_tree: "Context at lowest common ancestor"
+      prop_drilling_3_plus_levels: "Context or composition pattern"
+      list_rendering_large: "virtualization (react-window)"
+      form_with_validation: "controlled + zod schema"
+      error_prone_subtree: "ErrorBoundary wrapper (mandatory)"
+
   heuristics:
     decision:
       - id: "RCT001"
@@ -868,6 +880,34 @@ dependencies:
     - name: "rsc-architecture"
       path: "tasks/rsc-architecture.md"
       description: "Design Server Component boundaries"
+
+    - name: "server-component-patterns"
+      path: "tasks/server-component-patterns.md"
+      description: "RSC patterns: boundaries, streaming, server actions"
+
+    - name: "suspense-architecture"
+      path: "tasks/suspense-architecture.md"
+      description: "Suspense boundary placement and streaming SSR"
+
+    - name: "rsc-data-fetching"
+      path: "tasks/rsc-data-fetching.md"
+      description: "Data fetching: caching, revalidation, waterfall prevention"
+
+    - name: "custom-hook-library"
+      path: "tasks/custom-hook-library.md"
+      description: "Reusable hook library design and architecture"
+
+    - name: "form-architecture"
+      path: "tasks/form-architecture.md"
+      description: "Form handling: RHF, server actions, validation, progressive enhancement"
+
+    - name: "recovery-ux-patterns"
+      path: "tasks/recovery-ux-patterns.md"
+      description: "Error recovery UX: retry, partial failure, graceful degradation"
+
+    - name: "offline-detection-recovery"
+      path: "tasks/offline-detection-recovery.md"
+      description: "Offline detection, mutation queue, sync strategies"
 
   checklists:
     - name: "component-review-checklist"

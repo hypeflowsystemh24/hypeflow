@@ -1,3 +1,5 @@
+> **DEPRECATED** — Scope absorbed into `rsc-architecture.md`. See `data/task-consolidation-map.yaml`.
+
 # Task: rsc-boundary-audit
 
 ```yaml

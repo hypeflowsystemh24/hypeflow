@@ -32,7 +32,7 @@ List active agents for the current project profile.
 
 4. **Show upgrade hint** (if not full profile)
    ```
-   Tip: Para ativar todos os 15 agentes, o projeto precisa ter React Native/Expo.
+   Tip: Para ativar todos os 14 agentes, o projeto precisa ter React Native/Expo.
    Profile "full" detectado quando: react-native OR expo in package.json.
    ```
 

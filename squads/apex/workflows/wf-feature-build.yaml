@@ -817,3 +817,39 @@ status_transitions:
   - from: InReview
     to: Done
     trigger: PR merged to main
+
+# ==============================================================================
+# ROLLBACK PROTOCOL
+# ==============================================================================
+# Added to ensure every workflow has a documented recovery path.
+# Triggered when a phase fails and cannot be resolved in-place.
+# ==============================================================================
+
+rollback:
+  trigger: "Phase failure that cannot be resolved within the current phase"
+
+  phases:
+    - phase-1-design
+    - phase-2-architecture
+    - phase-3-implement
+    - phase-4-polish
+    - phase-5-qa
+    - phase-6-ship
+
+  protocol:
+    step_1: "SNAPSHOT — Capture current state (git stash or checkpoint commit)"
+    step_2: "IDENTIFY — Determine which phase introduced the failure"
+    step_3: "REVERT — Roll back changes from the failed phase only"
+    step_4: "VERIFY — Confirm the pre-failure state is restored and stable"
+    step_5: "REPORT — Document what failed, why, and what was rolled back"
+    step_6: "RETRY or ESCALATE — Re-attempt the phase or escalate to apex-lead"
+
+  scope: "per-phase"
+  method: "git-based"
+
+  rules:
+    - "NEVER rollback more than 1 phase at a time"
+    - "ALWAYS create a checkpoint commit before retrying"
+    - "If rollback fails → escalate to apex-lead immediately"
+    - "Preserve all artifacts from the failed attempt for debugging"
+    - "User must approve rollback before execution"

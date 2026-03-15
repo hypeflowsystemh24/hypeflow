@@ -2,7 +2,7 @@
 
 ```yaml
 id: apex-discover-performance
-version: "1.0.0"
+version: "1.1.0"
 title: "Apex Discover Performance"
 description: >
   Static performance analysis across all components. Detects heavy components,
@@ -35,9 +35,9 @@ Static performance scan — no browser, no Lighthouse, just code analysis.
 
 ---
 
-## How It Works
+## Discovery Phases
 
-### Step 1: Analyze Component Weight
+### Phase 1: Analyze Component Weight
 
 ```yaml
 component_analysis:
@@ -58,7 +58,7 @@ component_analysis:
   flag_threshold: "Top 10% heaviest components"
 ```
 
-### Step 2: Detect Issues
+### Phase 2: Detect Issues
 
 ```yaml
 checks:
@@ -140,7 +140,7 @@ checks:
     severity: HIGH
 ```
 
-### Step 3: Calculate Performance Health Score
+### Phase 3: Calculate Performance Health Score
 
 ```yaml
 health_score:
@@ -164,7 +164,7 @@ health_score:
     0-49: "critical — performance overhaul needed"
 ```
 
-### Step 4: Output
+### Phase 4: Output
 
 ```yaml
 output_format: |
@@ -205,22 +205,56 @@ output_format: |
 
 ---
 
+## Integration with Other Tasks
+
+```yaml
+feeds_into:
+  apex-suggest:
+    what: "Performance issues become proactive suggestions"
+    how: "Lazy loading gaps, image issues, re-render risks flagged"
+  apex-audit:
+    what: "Performance health feeds audit report"
+    how: "Health score part of project readiness"
+  perf-eng:
+    what: "Addy receives complete performance inventory"
+    how: "No manual exploration needed"
+  veto_gate_QG-AX-007:
+    what: "Performance violations feed budget gate"
+    how: "Discovery provides bundle/CWV data for QG-AX-007"
+  smart_defaults:
+    what: "Auto-suggest optimization strategies"
+    how: "Heavy component → suggest lazy load, large image → suggest next/image"
+```
+
+---
+
 ## Veto Conditions
 
 ```yaml
 veto_conditions:
-  - id: VC-DP-001
+  - id: VC-DISC-PERF-001
     condition: "First Load JS exceeds budget (>80KB gzipped)"
     action: "WARN — Feeds QG-AX-007. Optimize bundle before shipping."
     available_check: "command:npm run build"
     on_unavailable: MANUAL_CHECK
+    feeds_gate: QG-AX-007
 
-  - id: VC-DP-002
+  - id: VC-DISC-PERF-002
     condition: "Above-fold image loaded lazily (degrades LCP)"
     action: "WARN — Hero/above-fold images must load eagerly with priority."
     available_check: "manual"
     on_unavailable: MANUAL_CHECK
+    feeds_gate: QG-AX-007
 ```
+
+---
+
+## Handoff
+
+| Field | Value |
+|-------|-------|
+| Delivers to | apex-lead (overview), perf-eng (optimization decisions) |
+| Next action | User optimizes lazy loading, images, or bundle |
 
 ---
 
@@ -239,4 +273,22 @@ cache:
 
 ---
 
-*Apex Squad — Discover Performance Task v1.0.0*
+## Edge Cases
+
+```yaml
+edge_cases:
+  - condition: "SSR-only project (no client bundle)"
+    action: "ADAPT — focus on server-side metrics, skip bundle analysis"
+  - condition: "Project with no images"
+    action: "ADAPT — skip image audit category"
+  - condition: "No build system configured"
+    action: "WARN — bundle analysis limited without build output"
+```
+
+---
+
+`schema_ref: data/discovery-output-schema.yaml`
+
+---
+
+*Apex Squad — Discover Performance Task v1.1.0*

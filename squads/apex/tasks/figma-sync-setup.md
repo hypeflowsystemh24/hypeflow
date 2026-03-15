@@ -1,3 +1,7 @@
+> **DEPRECATED** — Converted to template at `checklists/figma-sync-setup.md`. See `data/task-consolidation-map.yaml` for details.
+
+---
+
 # Task: figma-sync-setup
 
 ```yaml

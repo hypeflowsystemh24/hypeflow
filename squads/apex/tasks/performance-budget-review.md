@@ -1,3 +1,5 @@
+> **DEPRECATED** — Scope absorbed into `performance-audit.md`. See `data/task-consolidation-map.yaml`.
+
 # Task: performance-budget-review
 
 ```yaml

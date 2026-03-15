@@ -59,10 +59,65 @@ This task handles 8 pipeline commands. All are triggered by the user through ape
 8. Between checkpoints, orchestrate agents per `wf-apex-pipeline.yaml`
 9. Save state on every transition (phase, checkpoint, gate, handoff, error)
 
-**Example:**
+**Example (full execution output):**
 ```
 User: *apex-go "notification system with toast and badge"
-Emil: [presents CP-01, gathers brief, then runs pipeline autonomously]
+
+⚡ Emil — Pipeline Autonomo Iniciado
+Pipeline ID: apex-pipe-2026-03-12T14-22
+Mode: autonomous | Phases: 7 | Checkpoints: 6
+
+═══ CP-01: Feature Brief ═══
+Escopo: NotificationToast.tsx, NotificationBadge.tsx, useNotifications.ts
+Dominio: React + CSS + Motion + A11y
+Agentes: ⚛️ Kent → 🎭 Josh → 🎬 Matt → ♿ Sara
+Estimativa: ~5 arquivos novos, ~3 modificados
+
+Aprovar brief? (sim / ajustar)
+
+User: sim
+
+═══ Phase 1: Specify ═══ COMPLETE
+═══ Phase 2: Design ═══ ...
+
+═══ CP-02: Design Review ═══
+Tokens definidos: 4 (notification-bg, notification-text, badge-count, toast-shadow)
+Variants: success, warning, error, info
+Motion: slide-in spring (stiffness: 300, damping: 24)
+Reduced motion: opacity-only fade
+
+Aprovar design? (sim / ajustar)
+
+User: sim
+
+═══ Phase 3: Architect ═══ COMPLETE
+═══ Phase 4: Implement ═══ COMPLETE (auto)
+═══ Phase 5: Polish ═══ ...
+
+═══ CP-05: Motion + A11y Split ═══
+🎬 Matt: Toast enter spring (300/24), exit spring (400/30, 0.6x duration)
+♿ Sara: aria-live="polite", role="status", auto-dismiss 5s, focus trap on action
+🚀 Addy: Toast lazy-loaded, <2kb gzipped
+
+Aprovar polish? (sim / ajustar)
+
+User: sim
+
+═══ Phase 6: QA ═══ COMPLETE (auto)
+  QG-AX-001: PASS (zero hardcoded values)
+  QG-AX-005: PASS (axe-core 0 violations)
+  QG-AX-006: PASS (spring physics, no CSS transition)
+  QG-AX-010: PASS (typecheck + lint)
+
+═══ CP-06: Ship Decision ═══
+  Verdict: PASS (4/4 gates)
+  5 arquivos criados, 3 modificados. Typecheck PASS. Lint PASS.
+
+  1. Ship (handoff @devops)
+  2. Rodar polish cycle
+  3. Done
+
+  O que prefere?
 ```
 
 ---
@@ -350,6 +405,32 @@ gate:
 | Delivers to | Multiple agents throughout pipeline execution |
 | Artifact | Pipeline state file with full execution history |
 | Next action | Depends on pipeline phase and mode |
+
+### Ship Phase → @devops Handoff (Manual)
+
+```yaml
+ship_to_devops:
+  description: >
+    After Phase 7 (Ship) completes, Apex generates a handoff artifact at
+    .aios/handoffs/ for @devops (Gage). This handoff is MANUAL — the user
+    must activate @devops and run *push. Apex CANNOT push to remote.
+  artifact_path: ".aios/handoffs/handoff-apex-lead-to-devops-{timestamp}.yaml"
+  artifact_contents:
+    from_agent: apex-lead
+    to_agent: devops
+    last_command: "*apex-go"
+    story_context: "{story_id, branch, status, files_modified}"
+    next_action: "*push"
+  user_prompt: |
+    Pipeline complete. To push changes:
+    1. Activate @devops
+    2. Run *push
+    Or type "push" and Apex will generate the handoff artifact automatically.
+  note: >
+    This is intentionally manual per Agent Authority rules — only @devops
+    has exclusive authority for git push. The handoff artifact ensures
+    context is preserved across the agent switch.
+```
 
 ---
 

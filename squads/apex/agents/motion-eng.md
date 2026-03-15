@@ -496,6 +496,18 @@ thinking_dna:
           - "All layout animations replaced with instant position change"
           - "All entrance/exit animations replaced with opacity fade (150ms)"
 
+    decision_matrix:
+      enter_animation: "spring (never CSS transition)"
+      exit_animation: "spring with AnimatePresence"
+      hover_micro_interaction: "CSS transition (exception: OK for hover)"
+      scroll_driven_reveal: "useInView + spring"
+      page_transition: "layout animation or shared layout"
+      loading_skeleton: "pulse CSS animation (no spring needed)"
+      reduced_motion_user: "crossfade or instant (no motion)"
+      gesture_feedback: "useSpring with damping > 20"
+      choreographed_sequence: "staggerChildren + delayChildren"
+      continuous_loop: "CSS @keyframes (not spring)"
+
   heuristics:
     decision:
       - id: "MOT001"
@@ -862,6 +874,18 @@ dependencies:
     - name: "choreography-design"
       path: "tasks/choreography-design.md"
       description: "Design multi-element animation sequence"
+
+    - name: "scroll-driven-animation"
+      path: "tasks/scroll-driven-animation.md"
+      description: "Scroll-driven animations (CSS Scroll Timeline + JS fallbacks)"
+
+    - name: "gesture-animation-system"
+      path: "tasks/gesture-animation-system.md"
+      description: "Gesture-to-animation system with Hybrid Engine and velocity handoff"
+
+    - name: "layout-animation-patterns"
+      path: "tasks/layout-animation-patterns.md"
+      description: "Layout animations (FLIP, Framer Motion layout, View Transitions)"
 
   checklists:
     - name: "motion-review-checklist"

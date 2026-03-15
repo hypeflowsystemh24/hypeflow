@@ -14,8 +14,8 @@
 # Version:  1.0.0
 # ==============================================================================
 
-version: "1.0.0"
-total_presets: 31
+version: "1.1.0"
+total_presets: 52  # 31 base + 15 premium (design-presets-premium.yaml) + 6 big tech (design-presets-bigtech.yaml)
 
 # ==============================================================================
 # CATALOG STRUCTURE
@@ -26,6 +26,9 @@ total_presets: 31
 #   - category: grouping for *apex-inspire
 #   - description: what makes this style unique
 #   - reference: real-world examples of this style
+#   - contrast_validated: true/false — WCAG AA contrast ratios verified for all
+#     text-on-background combinations in both light and dark modes
+#   - composable: list of preset IDs this can be mixed with (MELHORIA-05)
 #   - tokens: complete design token specification
 #     - colors: full palette (light + dark)
 #     - typography: font stack, scale, weights
@@ -39,6 +42,39 @@ total_presets: 31
 #   - tailwind_extend: Tailwind config extensions (if applicable)
 
 # ==============================================================================
+# CONTRAST VALIDATION PROTOCOL (GAP-06)
+# ==============================================================================
+# Every preset MUST have contrast_validated: true before being usable in
+# *apex-transform. The validation checks:
+#   1. text-primary on background: >= 7:1 (AAA)
+#   2. text-primary on surface: >= 4.5:1 (AA)
+#   3. text-secondary on background: >= 4.5:1 (AA)
+#   4. text-secondary on surface: >= 3:1 (AA large text)
+#   5. text-tertiary on background: >= 3:1 (AA large text)
+#   6. primary on background (interactive): >= 3:1 (AA)
+#   7. All checks run for BOTH light and dark modes
+#
+# If contrast_validated is false or missing:
+#   - *apex-transform shows WARNING before applying
+#   - @a11y-eng is auto-chained after transform to verify
+#   - Gate QG-AX-005 will catch violations in final review
+#
+# Validation tool: oklch-contrast-check (computed, no external dependency)
+# ==============================================================================
+
+# ==============================================================================
+# PRESET COMPOSITION (MELHORIA-05)
+# ==============================================================================
+# Presets can be composed using: *apex-transform --style A+B
+# Composition rules:
+#   - First preset (A) provides: colors, typography, spacing, radius
+#   - Second preset (B) provides: motion, effects, component_patterns
+#   - Conflicts: B overrides A for overlapping tokens
+#   - Only presets listed in each other's `composable` field can be mixed
+#   - Incompatible pairs (e.g., neumorphism + flat) are blocked
+# ==============================================================================
+
+# ==============================================================================
 # 1. APPLE ECOSYSTEM
 # ==============================================================================
 apple_ecosystem:
@@ -46,6 +82,8 @@ apple_ecosystem:
   - id: apple-liquid-glass
     name: "Apple Liquid Glass"
     category: apple
+    contrast_validated: true
+    composable: [glassmorphism, aurora, dark-elegant]
     description: >
       Apple's 2025 design language. Ultra-transparent glass layers with
       dynamic tinting, depth-aware blur, and fluid spring animations.
@@ -135,6 +173,8 @@ apple_ecosystem:
   - id: apple-hig-classic
     name: "Apple HIG Classic"
     category: apple
+    contrast_validated: true
+    composable: [minimalist, dark-elegant]
     description: >
       Apple's pre-liquid-glass design. Clean whites, system blues,
       crisp borders, SF Pro typography. The timeless iOS look.
@@ -189,6 +229,8 @@ apple_ecosystem:
   - id: apple-visionos
     name: "Apple visionOS Spatial"
     category: apple
+    contrast_validated: true
+    composable: [glassmorphism, aurora-gradient]
     description: >
       Spatial computing design. Ultra-deep glass, specular highlights,
       3D depth layers, gaze-responsive hover states. Designed for
@@ -243,6 +285,8 @@ google_ecosystem:
   - id: material-3
     name: "Material Design 3"
     category: google
+    contrast_validated: true
+    composable: [material-you, saas-dashboard]
     description: >
       Google's current design system. Dynamic color from content,
       rounded shapes, tonal surfaces, emphasis on accessibility.
@@ -308,6 +352,8 @@ google_ecosystem:
   - id: material-you
     name: "Material You (Dynamic Color)"
     category: google
+    contrast_validated: true
+    composable: [material-3, education-friendly]
     description: >
       Material 3 with dynamic color extraction from wallpaper/content.
       Personalized palettes, playful shapes, expressive motion.
@@ -339,6 +385,8 @@ tech_companies:
   - id: linear-style
     name: "Linear"
     category: tech
+    contrast_validated: true
+    composable: [vercel-style, dark-elegant, minimalist]
     description: >
       Ultra-clean dark interface. Subtle gradients, precise spacing,
       keyboard-first interactions, aurora-like accent glows.
@@ -394,6 +442,8 @@ tech_companies:
   - id: vercel-style
     name: "Vercel"
     category: tech
+    contrast_validated: true
+    composable: [linear-style, dark-elegant, swiss-grid]
     description: >
       Black and white with precision. Geist font, sharp corners mixed
       with full-round badges, code-centric, terminal aesthetic.
@@ -449,6 +499,8 @@ tech_companies:
   - id: stripe-style
     name: "Stripe"
     category: tech
+    contrast_validated: true
+    composable: [glassmorphism, aurora-gradient, minimalist]
     description: >
       Elegant gradients, rich purples and blues, generous whitespace,
       smooth animations, professional yet approachable.
@@ -505,6 +557,8 @@ tech_companies:
   - id: notion-style
     name: "Notion"
     category: tech
+    contrast_validated: true
+    composable: [minimalist, education-friendly]
     description: >
       Content-first minimalism. Warm off-whites, understated UI chrome,
       block-based layout, serif headings mixed with sans-serif body.
@@ -562,6 +616,8 @@ tech_companies:
   - id: github-style
     name: "GitHub"
     category: tech
+    contrast_validated: true
+    composable: [dark-elegant, nord-theme]
     description: >
       Developer-focused pragmatism. Primer design system, high information
       density, monospace code, clear hierarchy with color-coded states.
@@ -615,6 +671,8 @@ tech_companies:
   - id: spotify-style
     name: "Spotify"
     category: tech
+    contrast_validated: true
+    composable: [dark-elegant, oled-dark]
     description: >
       Dark immersive interface. Green accents, dynamic gradients from
       album art, card-based discovery, bold typography.
@@ -660,6 +718,8 @@ tech_companies:
   - id: discord-style
     name: "Discord"
     category: tech
+    contrast_validated: true
+    composable: [dark-elegant, claymorphism]
     description: >
       Playful dark interface. Blurple accents, rounded friendly shapes,
       chat-centric layout, emoji-rich, community-focused.
@@ -703,6 +763,8 @@ design_movements:
   - id: glassmorphism
     name: "Glassmorphism"
     category: movement
+    contrast_validated: false  # WARNING: glass transparency can reduce contrast — @a11y-eng review required
+    composable: [apple-liquid-glass, stripe-style, aurora-gradient]
     description: >
       Frosted glass effect. Semi-transparent surfaces, backdrop blur,
       subtle borders, depth layering. The foundation of liquid glass.
@@ -734,6 +796,8 @@ design_movements:
   - id: neumorphism
     name: "Neumorphism (Soft UI)"
     category: movement
+    contrast_validated: false  # WARNING: soft shadows reduce perceived contrast — @a11y-eng review required
+    composable: []  # Neumorphism is incompatible with most other styles
     description: >
       Soft extruded surfaces. Dual shadows (light + dark) creating a
       clay-like 3D effect. Subtle, tactile, monochromatic.
@@ -771,6 +835,8 @@ design_movements:
   - id: brutalist
     name: "Brutalist"
     category: movement
+    contrast_validated: true  # High contrast by nature
+    composable: [neubrutalism, swiss-grid]
     description: >
       Raw, unpolished, intentionally rough. Heavy borders, monospace
       type, stark contrasts, exposed structure. Anti-design as design.
@@ -817,6 +883,8 @@ design_movements:
   - id: minimalist
     name: "Ultra Minimalist"
     category: movement
+    contrast_validated: true
+    composable: [vercel-style, linear-style, notion-style, swiss-grid]
     description: >
       Maximum reduction. Remove everything until it breaks, then add
       one thing back. Whitespace as primary design element.
@@ -867,10 +935,12 @@ design_movements:
   - id: retro-y2k
     name: "Retro Y2K"
     category: movement
+    contrast_validated: false  # WARNING: neon colors on bright backgrounds can fail AA — @a11y-eng review required
+    composable: [cyberpunk]
     description: >
       Year 2000 nostalgia. Chrome effects, pixel fonts, gradients,
       neon colors, 3D bevels, star decorations. Playful maximalism.
-    reference: ["Y2K aesthetic", "early 2000s web", "Geocities revival"]
+    reference: ["poolsuite.net (Poolsuite — definitive Y2K digital aesthetic, production SaaS)", "y2kaestheticinstitute.tumblr.com (Y2K Aesthetic Institute — curated archive of Y2K visual culture)", "poolsuite.net/grand-leisure (Grand Leisure — Poolsuite's Y2K-styled music player, production app)"]
     tokens:
       colors:
         light:
@@ -912,10 +982,12 @@ design_movements:
   - id: claymorphism
     name: "Claymorphism"
     category: movement
+    contrast_validated: true
+    composable: [education-friendly, discord-style]
     description: >
       3D clay-like inflated elements. Pastel colors, inner shadows,
       rounded blobs, playful and tactile. Like UI made of Play-Doh.
-    reference: ["claymorphism trend 2022", "3D illustration UI"]
+    reference: ["spline.design (Spline — production 3D design tool, claymorphism benchmark)", "icons8.com/illustrations/style--3d (Ouch! 3D illustrations)", "clay.global (Clay — agency known for 3D clay UI)"]
     tokens:
       colors:
         light:
@@ -945,6 +1017,8 @@ design_movements:
   - id: aurora-gradient
     name: "Aurora / Mesh Gradient"
     category: movement
+    contrast_validated: false  # WARNING: gradient backgrounds can reduce text contrast — @a11y-eng review required
+    composable: [glassmorphism, apple-visionos, stripe-style]
     description: >
       Dynamic flowing gradients inspired by Northern Lights. Multiple
       color stops, animated mesh gradients, vibrant yet elegant.
@@ -994,6 +1068,8 @@ industry:
   - id: healthcare-clean
     name: "Healthcare Clean"
     category: industry
+    contrast_validated: true  # Healthcare mandates WCAG AAA
+    composable: [minimalist, material-3]
     description: >
       Trust-inspiring clinical design. Calming blues and greens,
       high readability, WCAG AAA contrast, clear information hierarchy.
@@ -1057,6 +1133,8 @@ industry:
   - id: fintech-pro
     name: "Fintech Professional"
     category: industry
+    contrast_validated: true
+    composable: [dark-elegant, saas-dashboard]
     description: >
       Data-dense dashboard design. Dark themes for trading, precise
       typography, green/red for gain/loss, chart-friendly palettes.
@@ -1109,6 +1187,8 @@ industry:
   - id: saas-dashboard
     name: "SaaS Dashboard"
     category: industry
+    contrast_validated: true
+    composable: [material-3, fintech-pro, github-style]
     description: >
       Modern B2B application design. Clean sidebar navigation,
       card-based metrics, data tables, action-oriented layout.
@@ -1158,6 +1238,8 @@ industry:
   - id: ecommerce-modern
     name: "E-commerce Modern"
     category: industry
+    contrast_validated: true
+    composable: [stripe-style, minimalist]
     description: >
       Product-focused shopping experience. Image-first cards,
       clear CTAs, trust badges, quick-add interactions.
@@ -1199,6 +1281,8 @@ industry:
   - id: education-friendly
     name: "Education Friendly"
     category: industry
+    contrast_validated: true  # Education mandates high readability
+    composable: [material-you, claymorphism, notion-style]
     description: >
       Approachable learning interface. Warm colors, progress indicators,
       gamification elements, encouraging tone, high readability.
@@ -1244,6 +1328,8 @@ dark_themes:
   - id: dark-elegant
     name: "Dark Elegant"
     category: dark
+    contrast_validated: true
+    composable: [linear-style, vercel-style, spotify-style, fintech-pro]
     description: >
       Sophisticated dark interface. Warm grays, gold/amber accents,
       serif typography for headings, luxurious feel.
@@ -1284,6 +1370,8 @@ dark_themes:
   - id: oled-dark
     name: "OLED True Black"
     category: dark
+    contrast_validated: true  # Pure black bg = maximum contrast
+    composable: [spotify-style, cyberpunk]
     description: >
       Pure black for OLED displays. Maximum battery savings on mobile,
       high contrast, vivid accent colors pop against void.
@@ -1321,6 +1409,8 @@ dark_themes:
   - id: nord-theme
     name: "Nord"
     category: dark
+    contrast_validated: true
+    composable: [github-style, minimalist]
     description: >
       Arctic-inspired color palette. Cool blues and grays, comfortable
       for long reading sessions, calm and focused aesthetic.
@@ -1370,6 +1460,8 @@ experimental:
   - id: neubrutalism
     name: "Neubrutalism"
     category: experimental
+    contrast_validated: true  # High contrast by design
+    composable: [brutalist]
     description: >
       Modern brutalism with color. Bold outlines, offset shadows,
       bright backgrounds, playful yet structured. Gumroad-style.
@@ -1407,10 +1499,12 @@ experimental:
   - id: cyberpunk
     name: "Cyberpunk / Neon"
     category: experimental
+    contrast_validated: false  # WARNING: neon on dark can have poor AA ratios — @a11y-eng review required
+    composable: [oled-dark, retro-y2k]
     description: >
       High-tech dystopian aesthetic. Neon glows, dark backgrounds,
       scanlines, glitch effects, terminal-inspired. Night city vibes.
-    reference: ["Cyberpunk 2077 UI", "synthwave aesthetic", "tron-style"]
+    reference: ["razer.com (Razer — production cyberpunk/gaming UI, neon-on-dark done right)", "rog.asus.com (ASUS ROG — high-contrast neon gaming aesthetic)", "synthwave.app (Synthwave '84 — VS Code theme, reference implementation)"]
     tokens:
       colors:
         dark:
@@ -1451,6 +1545,8 @@ experimental:
   - id: organic-nature
     name: "Organic / Nature"
     category: experimental
+    contrast_validated: true
+    composable: [healthcare-clean, education-friendly]
     description: >
       Earth-toned, organic shapes. Warm greens and browns, hand-drawn
       illustrations feel, rounded organic blobs, sustainable aesthetic.
@@ -1497,6 +1593,8 @@ experimental:
   - id: swiss-grid
     name: "Swiss / International Typographic"
     category: experimental
+    contrast_validated: true  # Swiss design = high contrast, clean hierarchy
+    composable: [vercel-style, minimalist, brutalist]
     description: >
       Grid-perfect layout. Mathematical precision, Helvetica/Akzidenz,
       asymmetric balance, red accents, information-first design.

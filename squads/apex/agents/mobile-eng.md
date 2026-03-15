@@ -533,6 +533,18 @@ thinking_dna:
           <Image source={item.image} />
         </SharedTransition.View>
 
+  decision_matrix:
+    navigation_stack_vs_tab: "stack for depth, tabs for top-level sections"
+    native_module_vs_js: "JS bridge first, JSI only if perf-critical"
+    animated_vs_reanimated: "Reanimated always (runs on UI thread)"
+    flatlist_vs_flashlist: "FlashList for 100+ items, FlatList for simple lists"
+    expo_managed_vs_bare: "managed workflow unless native module required"
+    platform_specific_file: ".ios.tsx/.android.tsx (never runtime Platform.OS)"
+    gesture_handler_vs_touchable: "gesture handler always (better perf)"
+    async_storage_vs_mmkv: "MMKV for frequent reads, AsyncStorage for simple"
+    hermes_vs_jsc: "Hermes always (smaller bundle, faster startup)"
+    ota_update_strategy: "EAS Update for JS, full build for native changes"
+
   heuristics:
     decision:
       - id: "RN001"
@@ -862,8 +874,32 @@ dependencies:
       description: "Design gesture-driven interaction"
 
     - name: "native-module-setup"
-      path: "tasks/native-module-setup.md"
+      path: "tasks/extensions/native-module-setup.md"
       description: "Set up TurboModule or JSI binding"
+
+    - name: "rn-performance-optimization"
+      path: "tasks/extensions/rn-performance-optimization.md"
+      description: "Diagnose and resolve React Native performance bottlenecks"
+
+    - name: "rn-navigation-architecture"
+      path: "tasks/extensions/rn-navigation-architecture.md"
+      description: "Design navigation architecture (React Navigation / Expo Router)"
+
+    - name: "expo-eas-setup"
+      path: "tasks/extensions/expo-eas-setup.md"
+      description: "Configure Expo & EAS Build/Submit/Update"
+
+    - name: "screen-transition-architecture"
+      path: "tasks/extensions/screen-transition-architecture.md"
+      description: "Design custom screen transitions with shared elements"
+
+    - name: "reanimated-worklet-patterns"
+      path: "tasks/extensions/reanimated-worklet-patterns.md"
+      description: "Advanced Reanimated worklet patterns library"
+
+    - name: "jsi-binding-development"
+      path: "tasks/extensions/jsi-binding-development.md"
+      description: "Implement JSI bindings for synchronous native access"
 
   checklists:
     - name: "rn-performance-checklist"

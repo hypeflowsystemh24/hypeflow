@@ -1,3 +1,7 @@
+> **DEPRECATED** — Converted to checklist at `checklists/fluid-type-setup.md`. See `data/task-consolidation-map.yaml` for details.
+
+---
+
 # Task: fluid-type-setup
 
 ```yaml

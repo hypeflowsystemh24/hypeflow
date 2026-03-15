@@ -12,7 +12,7 @@
 # ==============================================================================
 
 id: wf-component-refactor
-version: "1.0.0"
+version: "1.1.0"
 title: "Component Refactor Workflow"
 description: >
   Safe refactoring of complex components into smaller, focused pieces.
@@ -21,6 +21,8 @@ description: >
 trigger:
   manual: "*apex-refactor {component}"
   suggested_after: "*discover-components when god_components > 0"
+
+veto_registry: "data/veto-conditions.yaml"
 
 # ==============================================================================
 # PHASES
@@ -52,6 +54,7 @@ phases:
     checkpoint:
       name: "Decomposition Plan Approved"
       requires: "User approves the plan before refactoring begins"
+      gates: [QG-AX-004]
       veto_conditions:
         - condition: "Plan proposes more than 8 new components"
           action: "WARN — Review if over-decomposition"
@@ -73,6 +76,7 @@ phases:
 
     checkpoint:
       name: "Baseline Tests Pass"
+      gates: [QG-AX-009]
       veto_conditions:
         - condition: "Tests do not pass before refactoring starts"
           action: "VETO — Fix existing test failures first"
@@ -95,6 +99,7 @@ phases:
 
     checkpoint:
       name: "Refactoring Complete"
+      gates: [QG-AX-010]
       veto_conditions:
         - condition: "TypeScript errors present"
           action: "VETO — Fix all type errors before proceeding"
@@ -123,6 +128,7 @@ phases:
 
     checkpoint:
       name: "Refactor Verified"
+      gates: [QG-AX-007, QG-AX-009]
       veto_conditions:
         - condition: "Baseline tests fail after refactoring"
           action: "VETO — Regression detected. Fix before proceeding."
@@ -145,6 +151,7 @@ phases:
 
     checkpoint:
       name: "Refactor Complete"
+      gates: [QG-AX-009, QG-AX-010]
       gate:
         - "All tests pass"
         - "TypeScript clean"
@@ -161,3 +168,38 @@ summary:
   checkpoints: 5
   veto_conditions: 4
   estimated_complexity: "MEDIUM — scales with component size"
+
+# ==============================================================================
+# ROLLBACK PROTOCOL
+# ==============================================================================
+# Added to ensure every workflow has a documented recovery path.
+# Triggered when a phase fails and cannot be resolved in-place.
+# ==============================================================================
+
+rollback:
+  trigger: "Phase failure that cannot be resolved within the current phase"
+
+  phases:
+    - analyze
+    - test_coverage
+    - refactor
+    - verify
+    - cleanup
+
+  protocol:
+    step_1: "SNAPSHOT — Capture current state (git stash or checkpoint commit)"
+    step_2: "IDENTIFY — Determine which phase introduced the failure"
+    step_3: "REVERT — Roll back changes from the failed phase only"
+    step_4: "VERIFY — Confirm the pre-failure state is restored and stable"
+    step_5: "REPORT — Document what failed, why, and what was rolled back"
+    step_6: "RETRY or ESCALATE — Re-attempt the phase or escalate to apex-lead"
+
+  scope: "per-phase"
+  method: "git-based"
+
+  rules:
+    - "NEVER rollback more than 1 phase at a time"
+    - "ALWAYS create a checkpoint commit before retrying"
+    - "If rollback fails → escalate to apex-lead immediately"
+    - "Preserve all artifacts from the failed attempt for debugging"
+    - "User must approve rollback before execution"

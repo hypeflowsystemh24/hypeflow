@@ -1,3 +1,5 @@
+> **DEPRECATED** — Scope absorbed into `visual-regression-audit.md`. See `data/task-consolidation-map.yaml`.
+
 # Task: theme-visual-testing
 
 ```yaml

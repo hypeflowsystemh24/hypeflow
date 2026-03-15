@@ -1,3 +1,7 @@
+> **⚠️ DEPRECATED** — Scope absorbed by `monorepo-architecture-design.md`. See `data/task-consolidation-map.yaml` for details.
+
+---
+
 # Task: monorepo-setup
 
 ```yaml

@@ -526,6 +526,18 @@ thinking_dna:
           description: "State-based and variant overrides using data attributes"
           test: "Validate all state combinations render correctly"
 
+  decision_matrix:
+    pixel_diff_above_threshold: "FAIL — requires fix before merge"
+    pixel_diff_below_threshold: "PASS — acceptable variance"
+    new_component_no_baseline: "capture baseline first (block merge)"
+    theme_change_detected: "re-capture ALL baselines"
+    responsive_breakpoint_break: "FAIL — test at 375/768/1024/1440"
+    animation_visual_diff: "manual review (screenshot insufficient)"
+    font_rendering_diff: "platform-aware threshold (allow OS variance)"
+    color_shift_above_delta_e_3: "FAIL — perceptible color difference"
+    layout_shift_cls_above_0_1: "FAIL — CLS violation"
+    storybook_story_missing: "BLOCK — add story before visual test"
+
   heuristics:
     decision:
       - id: "VIS001"
@@ -885,6 +897,18 @@ dependencies:
     - name: "theme-visual-testing"
       path: "tasks/theme-visual-testing.md"
       description: "Visual testing across all themes"
+
+    - name: "screenshot-comparison-automation"
+      path: "tasks/screenshot-comparison-automation.md"
+      description: "Automated pixel-level and perceptual screenshot comparison"
+
+    - name: "responsive-visual-testing"
+      path: "tasks/responsive-visual-testing.md"
+      description: "Visual testing across viewports, DPR, and orientations"
+
+    - name: "component-state-visual-matrix"
+      path: "tasks/component-state-visual-matrix.md"
+      description: "Exhaustive visual test matrices for component states"
 
   checklists:
     - name: "visual-qa-checklist"

@@ -38,6 +38,75 @@ outputs:
 - UI enhancement (redesign section, add responsive behavior)
 - Changes touching 3-10 files
 
+## Output Examples
+
+### Example 1 — New card component
+
+```
+User: *apex-quick "cria um card de stats com icone, valor e label"
+
+⚡ Emil — Quick Pipeline (3 fases)
+
+═══ CP-QK-01: Escopo ═══
+Arquivos: StatsCard.tsx (novo), index.ts (export)
+Agentes: ⚛️ Kent (component) → 🎭 Josh (estilo) → ♿ Sara (a11y)
+Tokens: card-bg, card-border, card-shadow, stat-value-size
+
+Aprovar? (sim / ajustar)
+
+User: sim
+
+═══ Phase 1: Specify ═══ COMPLETE
+═══ Phase 2: Implement ═══ ...
+
+⚛️ Kent aqui. StatsCard com props: icon, value, label, trend?, variant?.
+🎭 Josh aqui. Glass card, responsive padding, hover scale(1.02).
+♿ Sara aqui. role="figure", aria-label descritivo, contrast 7:1.
+
+═══ Phase 3: Ship ═══
+
+═══ CP-QK-02: Review ═══
+  2 arquivos criados. Typecheck PASS. Lint PASS.
+  QG-QK-001: PASS | QG-QK-002: PASS | QG-QK-003: PASS
+
+  1. Rodar suggestion scan
+  2. Fazer deploy (handoff @devops)
+  3. Done
+
+  O que prefere?
+```
+
+### Example 2 — Responsive redesign
+
+```
+User: *apex-quick "redesenha o footer pra ficar melhor no mobile"
+
+⚡ Emil — Quick Pipeline
+
+═══ CP-QK-01: Escopo ═══
+Arquivos: Footer.tsx (modificar)
+Agentes: 🎭 Josh (responsive) → ♿ Sara (touch targets)
+Scope lock: APENAS Footer.tsx, APENAS layout mobile
+
+Aprovar? (sim / ajustar)
+
+User: sim
+
+🎭 Josh aqui. Footer usa grid 3 colunas fixo — colapsa pra stack no mobile.
+   flex-direction: column abaixo de 640px, gap aumentado pra 2rem.
+♿ Sara aqui. Links touch target: 38px → 44px. Tab order preservado.
+
+═══ CP-QK-02: Review ═══
+  1 arquivo modificado. Typecheck PASS. Lint PASS.
+
+  1. Rodar suggestions no Footer.tsx
+  2. Done
+
+  O que prefere?
+```
+
+---
+
 ## When NOT to Use
 
 - Single-file fix → `*apex-fix`

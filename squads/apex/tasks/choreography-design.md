@@ -1,3 +1,5 @@
+> **DEPRECATED** — Scope absorbed into `animation-architecture.md`. See `data/task-consolidation-map.yaml`.
+
 # Task: choreography-design
 
 ```yaml

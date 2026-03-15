@@ -1,3 +1,5 @@
+> **DEPRECATED** — Scope absorbed into `layout-strategy.md`. See `data/task-consolidation-map.yaml`.
+
 # Task: responsive-audit
 
 ```yaml

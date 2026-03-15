@@ -550,6 +550,18 @@ thinking_dna:
         - "glslify — import GLSL modules"
         - "lamina — layer-based shader composition (no raw GLSL)"
 
+  decision_matrix:
+    3d_scene_simple: "vanilla Three.js (no R3F overhead)"
+    3d_scene_react_integrated: "React Three Fiber (R3F)"
+    shader_simple_color: "ShaderMaterial with inline GLSL"
+    shader_complex_effect: "custom shader file + uniforms"
+    model_format: "glTF/GLB always (never OBJ or FBX in prod)"
+    spatial_ui_overlay: "HTML overlay with CSS3DRenderer"
+    spatial_ui_immersive: "WebXR DOM overlay or R3F Html component"
+    performance_many_objects: "InstancedMesh (never individual meshes)"
+    performance_heavy_geometry: "LOD (Level of Detail) with distance tiers"
+    xr_session_type: "immersive-vr for VR, immersive-ar for AR (never inline)"
+
   heuristics:
     decision:
       - id: "3D001"
@@ -908,16 +920,28 @@ commands:
 dependencies:
   tasks:
     - name: "scene-architecture"
-      path: "tasks/scene-architecture.md"
+      path: "tasks/extensions/scene-architecture.md"
       description: "Design R3F scene component architecture"
 
     - name: "3d-performance-audit"
-      path: "tasks/3d-performance-audit.md"
+      path: "tasks/extensions/3d-performance-audit.md"
       description: "Audit and optimize 3D scene performance"
 
     - name: "shader-design"
-      path: "tasks/shader-design.md"
+      path: "tasks/extensions/shader-design.md"
       description: "Design custom GLSL shader material"
+
+    - name: "webxr-session-setup"
+      path: "tasks/extensions/webxr-session-setup.md"
+      description: "Configure WebXR sessions for VR/AR experiences"
+
+    - name: "r3f-component-patterns"
+      path: "tasks/extensions/r3f-component-patterns.md"
+      description: "Reusable React Three Fiber component patterns"
+
+    - name: "spatial-ui-design"
+      path: "tasks/extensions/spatial-ui-design.md"
+      description: "Spatial UI design for VisionOS and WebXR"
 
   checklists:
     - name: "3d-scene-checklist"

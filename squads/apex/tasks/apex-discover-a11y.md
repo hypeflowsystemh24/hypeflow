@@ -2,7 +2,7 @@
 
 ```yaml
 id: apex-discover-a11y
-version: "1.0.0"
+version: "1.1.0"
 title: "Apex Discover Accessibility"
 description: >
   Static accessibility scan across all components. Detects missing alt texts,
@@ -33,9 +33,9 @@ Static accessibility scan across all components (no browser needed).
 
 ---
 
-## How It Works
+## Discovery Phases
 
-### Step 1: Scan All Components
+### Phase 1: Scan All Components
 
 ```yaml
 scan:
@@ -51,7 +51,7 @@ scan:
     - "build/dist output"
 ```
 
-### Step 2: Check Categories
+### Phase 2: Check Categories
 
 ```yaml
 checks:
@@ -148,10 +148,11 @@ checks:
     severity: MEDIUM
 ```
 
-### Step 3: Calculate A11y Health Score
+### Phase 3: Calculate A11y Health Score
 
 ```yaml
 health_score:
+  # **Score Formula SSoT:** `data/health-score-formulas.yaml#discover-a11y`. The inline formula below is kept for reference but the YAML file is authoritative.
   formula: "100 - (penalties)"
   penalties:
     critical_keyboard_trap: -15 each
@@ -170,7 +171,7 @@ health_score:
     0-49: "inaccessible — major barriers for users with disabilities"
 ```
 
-### Step 4: Output
+### Phase 4: Output
 
 ```yaml
 output_format: |
@@ -206,22 +207,56 @@ output_format: |
 
 ---
 
+## Integration with Other Tasks
+
+```yaml
+feeds_into:
+  apex-suggest:
+    what: "A11y issues become proactive suggestions"
+    how: "Missing alt, labels, keyboard traps flagged"
+  apex-audit:
+    what: "A11y health feeds audit report"
+    how: "Health score part of project readiness"
+  a11y-eng:
+    what: "Sara receives complete a11y inventory"
+    how: "No manual exploration needed"
+  veto_gate_QG-AX-005:
+    what: "A11y violations feed accessibility gate"
+    how: "Discovery provides exact violations for QG-AX-005"
+  smart_defaults:
+    what: "Auto-suggest correct ARIA patterns"
+    how: "onClick on div → suggest <button> with role"
+```
+
+---
+
 ## Veto Conditions
 
 ```yaml
 veto_conditions:
-  - id: VC-DA-001
+  - id: VC-DISC-A11Y-001
     condition: "Keyboard trap detected (modal/drawer without escape or focus trap)"
     action: "VETO — Keyboard traps are WCAG 2.1.2 Level A violations. Fix immediately."
     available_check: "manual"
     on_unavailable: MANUAL_CHECK
+    feeds_gate: QG-AX-005
 
-  - id: VC-DA-002
+  - id: VC-DISC-A11Y-002
     condition: "Interactive div/span without keyboard support"
     action: "WARN — Add role, tabIndex, and keyboard handler or use <button>."
     available_check: "manual"
     on_unavailable: MANUAL_CHECK
+    feeds_gate: QG-AX-005
 ```
+
+---
+
+## Handoff
+
+| Field | Value |
+|-------|-------|
+| Delivers to | apex-lead (overview), a11y-eng (remediation) |
+| Next action | User fixes CRITICAL first, then HIGH |
 
 ---
 
@@ -239,4 +274,22 @@ cache:
 
 ---
 
-*Apex Squad — Discover Accessibility Task v1.0.0*
+## Edge Cases
+
+```yaml
+edge_cases:
+  - condition: "Project uses headless UI libraries (Radix, React Aria)"
+    action: "ADAPT — reduce false positives, trust library a11y handling"
+  - condition: "No interactive components"
+    action: "ADAPT — focus on content a11y (alt text, headings, contrast)"
+  - condition: "CSS-only project (no JSX)"
+    action: "ADAPT — scan CSS for contrast and focus styles only"
+```
+
+---
+
+`schema_ref: data/discovery-output-schema.yaml`
+
+---
+
+*Apex Squad — Discover Accessibility Task v1.1.0*

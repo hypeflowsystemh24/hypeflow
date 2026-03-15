@@ -1,3 +1,5 @@
+> **DEPRECATED** — Scope absorbed into `component-design.md`. See `data/task-consolidation-map.yaml`.
+
 # Task: design-component
 
 ```yaml

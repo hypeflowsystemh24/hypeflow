@@ -39,16 +39,34 @@ The user must ALWAYS know:
 Emil (apex-lead) ALWAYS receives the request first. He:
 1. Classifies intent, scope, and domain (via `apex-entry.md`)
 2. Identifies the target specialist (via `apex-route-request.md`)
-3. **Announces the delegation** using the format below
+3. **Preserves the original user request VERBATIM** (for adherence validation)
+4. **Announces the delegation** using the format below
 
 #### Delegation Announcement Format
 
 ```
 {Emil analyzes request silently}
+{Emil stores original_user_request VERBATIM in handoff context}
 
 Isso e {domain} — delegando para {agent_icon} {agent_name} (@{agent_id}).
 {one-line reason why this agent is the right one}
 ```
+
+#### Original Request Preservation (P1 — Handoff Gap Fix)
+
+**CRITICAL:** The specialist MUST receive the user's EXACT words, not Emil's interpretation.
+
+```yaml
+handoff_context:
+  original_user_request: "{VERBATIM copy of what user typed}"
+  user_attachments: ["{screenshot paths or descriptions if any}"]
+  emil_classification:
+    intent: "{fix|improve|create|redesign|audit}"
+    scope: "{single-agent|multi-agent|pipeline}"
+    domain: "{css|react|motion|a11y|perf|ux|visual}"
+```
+
+**Veto:** `VC-HANDOFF-001` — Handoff without `original_user_request` verbatim is BLOCKED.
 
 **Examples:**
 
@@ -72,10 +90,33 @@ WCAG AA e o minimo, ela garante que funcione pra todo mundo.
 ### Phase 2: Specialist Takes Over
 
 The specialist agent:
-1. **Introduces themselves** briefly (1 line)
-2. **States what they see** (the problem/task from their expertise)
-3. **Executes the work**
-4. Does NOT explain who they are at length — just name + focus
+1. **Reads the original_user_request** from handoff context (NOT Emil's summary)
+2. **Reads the intent_translation** — the confirmed visual description from Step 1.6
+3. **Introduces themselves** briefly (1 line)
+4. **States what they see** (the problem/task from their expertise)
+5. **Executes the work** within scope lock boundaries
+6. Does NOT explain who they are at length — just name + focus
+
+#### Intent Translation in Handoff (Non-Technical User Support)
+
+The specialist receives BOTH:
+- `original_user_request`: What the user literally typed
+- `intent_translation`: The visual description that user confirmed as "sim"
+
+```yaml
+handoff_context:
+  original_user_request: "tire o background do header e mantenha fixo"
+  intent_translation:
+    confirmed: true
+    items:
+      - "O fundo do header fica transparente"
+      - "O header fica SEMPRE visivel quando rolar a pagina"
+      - "Icones e logo continuam no lugar"
+  user_attachments: []
+```
+
+The specialist uses `intent_translation` as the PRIMARY source of truth for WHAT to do.
+If `intent_translation` and `original_user_request` seem to conflict, ask user for clarification.
 
 #### Specialist Introduction Format
 
@@ -260,6 +301,8 @@ handoff_chains:
 rules:
   - "Emil ALWAYS receives first — never skip the orchestrator"
   - "Delegation announcement is MANDATORY — never silently switch"
+  - "original_user_request MUST be passed VERBATIM in every handoff — never paraphrase"
+  - "User attachments (screenshots, URLs) MUST be forwarded to specialist"
   - "Specialist introduction is 1 line MAX — no lengthy intros"
   - "Completion ALWAYS shows options — never end without next steps"
   - "Max chain depth: 5 handoffs (prevent infinite loops)"
@@ -268,6 +311,7 @@ rules:
   - "If user addresses a specific agent (@css-eng), skip Emil routing"
   - "During pipeline (*apex-go), handoffs are implicit (no announcement needed between phases)"
   - "During fix/quick (*apex-fix, *apex-quick), handoffs are EXPLICIT (announcement required)"
+  - "After 2 consecutive chains, default option changes to 'Done' (P2 — context window protection)"
 ```
 
 ---

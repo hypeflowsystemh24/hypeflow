@@ -576,6 +576,18 @@ thinking_dna:
             - "Indirect gesture (far-field pinch)"
             - "Keyboard input in spatial context"
 
+  decision_matrix:
+    test_ui_component: "Testing Library (web) + RNTL (mobile)"
+    test_navigation_flow: "Detox (mobile) + Playwright (web)"
+    test_gesture_interaction: "Detox gesture API (never manual touch sim)"
+    test_offline_scenario: "network conditioner + state assertions"
+    test_platform_specific: "separate test files per platform (.ios.test, .android.test)"
+    test_shared_logic: "Jest unit test (platform-agnostic)"
+    visual_regression_web: "Chromatic or Percy"
+    visual_regression_mobile: "screenshot comparison with tolerance"
+    test_deep_link: "end-to-end with URL scheme trigger"
+    test_performance: "Flashlight (mobile) + Lighthouse (web)"
+
   heuristics:
     decision:
       - id: "XP001"
@@ -968,7 +980,7 @@ commands:
 dependencies:
   tasks:
     - name: "cross-platform-test-setup"
-      path: "tasks/cross-platform-test-setup.md"
+      path: "tasks/extensions/cross-platform-test-setup.md"
       description: "Set up cross-platform testing infrastructure"
 
     - name: "device-matrix-design"
@@ -976,11 +988,11 @@ dependencies:
       description: "Design device testing matrix for project"
 
     - name: "gesture-test-suite"
-      path: "tasks/gesture-test-suite.md"
+      path: "tasks/extensions/gesture-test-suite.md"
       description: "Design gesture testing suite"
 
     - name: "offline-test-suite"
-      path: "tasks/offline-test-suite.md"
+      path: "tasks/extensions/offline-test-suite.md"
       description: "Design offline/connectivity test suite"
 
   checklists:

@@ -2,7 +2,7 @@
 
 ```yaml
 id: apex-discover-dependencies
-version: "1.0.0"
+version: "1.1.0"
 title: "Apex Discover Dependencies"
 description: >
   Audits frontend dependency health. Detects outdated, vulnerable, heavy,
@@ -32,9 +32,9 @@ Audits all frontend dependencies for health, weight, and security.
 
 ---
 
-## How It Works
+## Discovery Phases
 
-### Step 1: Inventory Dependencies
+### Phase 1: Inventory Dependencies
 
 ```yaml
 inventory:
@@ -59,7 +59,7 @@ inventory:
     import_count: N
 ```
 
-### Step 2: Detect Issues
+### Phase 2: Detect Issues
 
 ```yaml
 checks:
@@ -129,7 +129,7 @@ checks:
     severity: LOW
 ```
 
-### Step 3: Calculate Dependency Health Score
+### Phase 3: Calculate Dependency Health Score
 
 ```yaml
 health_score:
@@ -151,7 +151,7 @@ health_score:
     0-49: "critical — security and performance risks"
 ```
 
-### Step 4: Output
+### Phase 4: Output
 
 ```yaml
 output_format: |
@@ -190,16 +190,49 @@ output_format: |
 
 ---
 
+## Integration with Other Tasks
+
+```yaml
+feeds_into:
+  apex-suggest:
+    what: "Dependency issues become proactive suggestions"
+    how: "Heavy, unused, vulnerable packages flagged"
+  apex-audit:
+    what: "Dependency health feeds audit report"
+    how: "Health score part of project readiness"
+  perf-eng:
+    what: "Bundle impact data for perf analysis"
+    how: "Heavy deps with sizes feed performance decisions"
+  veto_gate_QG-AX-007:
+    what: "Heavy deps feed bundle budget gate"
+    how: "Discovery provides exact list of bundle-impacting packages"
+  smart_defaults:
+    what: "Auto-suggest alternatives for heavy packages"
+    how: "moment → dayjs, lodash → native methods"
+```
+
+---
+
 ## Veto Conditions
 
 ```yaml
 veto_conditions:
-  - id: VC-DD-001
+  - id: VC-DISC-DEP-001
     condition: "Critical vulnerability found in production dependency"
     action: "WARN — Update or replace vulnerable package before shipping."
     available_check: "command:npm audit --json"
     on_unavailable: MANUAL_CHECK
+    feeds_gate: QG-AX-007
 ```
+
+---
+
+## Handoff
+
+| Field | Value |
+|-------|-------|
+| Delivers to | apex-lead (overview), perf-eng (bundle decisions) |
+| Next action | User removes unused, updates outdated, or swaps heavy packages |
 
 ---
 
@@ -217,4 +250,24 @@ cache:
 
 ---
 
-*Apex Squad — Discover Dependencies Task v1.0.0*
+## Edge Cases
+
+```yaml
+edge_cases:
+  - condition: "Monorepo with multiple package.json"
+    action: "ADAPT — scan each workspace root, merge results"
+  - condition: "No lock file found"
+    action: "WARN — versions may not be pinned, security audit limited"
+  - condition: "pnpm workspaces"
+    action: "ADAPT — use pnpm list --json instead of npm"
+  - condition: "Private registry packages"
+    action: "ADAPT — skip version check for private scope, report as unknown"
+```
+
+---
+
+`schema_ref: data/discovery-output-schema.yaml`
+
+---
+
+*Apex Squad — Discover Dependencies Task v1.1.0*

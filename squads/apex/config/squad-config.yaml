@@ -13,7 +13,7 @@
 
 squad_config:
   name: apex
-  version: "1.1.0"
+  version: "1.3.2"
   description: "Squad 100% frontend ultra-premium para Web, Mobile e Spatial"
 
   # =========================================
@@ -40,6 +40,20 @@ squad_config:
     checkpoint_timeout_minutes: 30
     auto_suggest_after_operation: true
     max_chained_operations: 5
+
+    rollback:
+      enabled: true
+      backup_method: "git_stash"  # git_stash | git_branch
+      state_backup: true  # Backup state file before rollback
+
+    dry_run:
+      enabled: true
+      cache_plan: false  # Don't cache dry-run results
+
+    integrity:
+      checksum_algorithm: "sha256"
+      validate_on_read: true
+      validate_on_write: true
 
     intent_classification:
       fix_threshold: 3        # <= 3 files = *apex-fix
@@ -81,6 +95,12 @@ squad_config:
     design_scan:
       token_sources: [css_variables, tailwind_config, theme_objects]
       near_duplicate_hsl_distance: 5  # % distance for flagging
+    output:
+      schema: data/discovery-output-schema.yaml
+      storage_dir: ".aios/apex-context/discoveries/"
+      format: json
+      retention: 10  # Keep last 10 scans per type
+      diff_enabled: true  # Enable *discover-{type} --diff
 
   # =========================================
   # Suggestions Configuration

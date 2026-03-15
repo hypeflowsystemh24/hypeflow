@@ -1,3 +1,7 @@
+> **DEPRECATED** — Converted to checklist at `checklists/perf-budget-setup.md`. See `data/task-consolidation-map.yaml` for details.
+
+---
+
 # Task: perf-budget-setup
 
 ```yaml

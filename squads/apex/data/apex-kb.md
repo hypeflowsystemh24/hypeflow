@@ -1,6 +1,6 @@
 # Apex Squad — Knowledge Base
 
-> Version: 1.0
+> Version: 1.1
 > Maintained by: apex-lead
 > Scope: Authoritative reference for squad philosophy, standards, and patterns.
 
@@ -250,7 +250,41 @@ All gates must pass before `@devops` is requested to push or create a PR.
 
 ---
 
-## 9. Escalation and Decisions
+## 9. Implicit Knowledge — Formalized Premises
+
+> These are non-obvious decisions and defaults that emerged from real usage. They are **not derivable from code alone** — they encode user feedback, team philosophy, and lessons learned.
+
+### Premise 1: Header is sticky by default
+
+**Rule:** Every header component must use `position: sticky` (or equivalent) unless the user explicitly requests otherwise.
+
+**Why:** Users expect headers to remain visible during scroll. When a user says "fixo", "sempre visivel", or "nao sumir", they mean sticky. This was identified as a recurring misunderstanding where "fixo" was interpreted as static position instead of sticky.
+
+**Enforcement:** VC-GREEN-007 (WARN), vocabulary-bridge.yaml pattern `position_visibility.sticky_fixed`
+
+### Premise 2: Spring physics > CSS transitions for ALL interactive elements
+
+**Rule:** Any animation on an interactive element (button, card, modal, drawer, toggle) MUST use spring physics (Framer Motion / react-spring), never CSS `transition` with `ease-in-out` or `linear`.
+
+**Why:** CSS timing functions are arbitrary mathematical curves. Springs model real-world physics — they respond to interruption, maintain velocity on re-trigger, and feel "alive" rather than robotic. The difference is subtle but users consistently prefer spring-based UIs in A/B testing. CSS transitions are acceptable ONLY for non-interactive decorative elements (color fades, opacity changes on static text).
+
+**Enforcement:** QG-AX-006 (VETO — blocks ship), `*discover-motion` detects CSS-transition-on-interactive violations.
+
+### Premise 3: Vocabulary bridge is expansible by usage
+
+**Rule:** When a user phrase doesn't match any pattern in `vocabulary-bridge.yaml`, the system should: (1) ask the user to describe what they SEE, (2) resolve the intent, (3) log the new pattern for future addition.
+
+**Why:** The bridge started with 50+ patterns but natural language is infinite. New patterns emerge every session — "grudado" (sticky), "respira" (more spacing), "sufocado" (less spacing) — and they should be captured for the squad to improve over time.
+
+**Process for adding new patterns:**
+1. User says something unmapped → fallback rules activate
+2. After resolving intent via clarification, note the new mapping
+3. Add to `vocabulary-bridge.yaml` in the appropriate category
+4. Include 3+ `user_says` variations, `intent`, `technical`, `visual_description`, `agent`
+
+---
+
+## 10. Escalation and Decisions
 
 - **Design token additions:** apex-lead approves; PRD team notified
 - **New external dependency:** apex-lead + @architect approval required

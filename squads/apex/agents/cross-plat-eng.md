@@ -550,6 +550,18 @@ thinking_dna:
         - "Native deep linking config maps URLs to screens"
         - "Web gets SEO-friendly URLs automatically"
 
+  decision_matrix:
+    web_only_component: "React DOM primitives (div, span)"
+    mobile_only_component: "React Native primitives (View, Text)"
+    shared_component: "universal primitive with platform adapter"
+    navigation_web: "Next.js App Router or React Router"
+    navigation_mobile: "React Navigation (stack + tabs)"
+    navigation_shared: "Solito for unified routing"
+    styling_web: "Tailwind CSS or CSS Modules"
+    styling_mobile: "NativeWind or StyleSheet.create"
+    styling_shared: "NativeWind (Tailwind for both)"
+    deep_link_handling: "universal-deep-linking with platform resolver"
+
   heuristics:
     decision:
       - id: "XP001"
@@ -918,8 +930,28 @@ dependencies:
       description: "Set up cross-platform monorepo structure"
 
     - name: "shared-tokens-setup"
-      path: "tasks/shared-tokens-setup.md"
+      path: "tasks/extensions/shared-tokens-setup.md"
       description: "Create shared design token package"
+
+    - name: "solito-navigation-setup"
+      path: "tasks/extensions/solito-navigation-setup.md"
+      description: "Set up Solito cross-platform navigation abstraction"
+
+    - name: "universal-deep-linking"
+      path: "tasks/extensions/universal-deep-linking.md"
+      description: "Universal deep linking (iOS Universal Links + Android App Links)"
+
+    - name: "platform-adapter-patterns"
+      path: "tasks/extensions/platform-adapter-patterns.md"
+      description: "Platform adapter patterns for web/native code sharing"
+
+    - name: "moti-animation-architecture"
+      path: "tasks/extensions/moti-animation-architecture.md"
+      description: "Cross-platform animation architecture with Moti"
+
+    - name: "nativewind-setup"
+      path: "tasks/extensions/nativewind-setup.md"
+      description: "NativeWind (Tailwind for RN) setup and architecture"
 
   checklists:
     - name: "cross-platform-checklist"

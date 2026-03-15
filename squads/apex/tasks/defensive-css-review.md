@@ -1,3 +1,5 @@
+> **DEPRECATED** — Scope absorbed into `css-architecture-audit.md`. See `data/task-consolidation-map.yaml`.
+
 # Task: defensive-css-review
 
 ```yaml

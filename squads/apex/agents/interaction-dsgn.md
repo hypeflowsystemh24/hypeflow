@@ -583,6 +583,18 @@ thinking_dna:
           action: "Focus states, screen reader, keyboard navigation?"
           deliverable: "A11y annotation layer"
 
+  decision_matrix:
+    empty_state_no_content: "illustration + action CTA (never blank)"
+    loading_state_over_300ms: "skeleton screen (not spinner)"
+    loading_state_under_300ms: "no indicator (perceived instant)"
+    error_state_recoverable: "inline error + retry action"
+    error_state_fatal: "full-page error + support contact"
+    form_multi_step: "progress indicator + save draft"
+    form_single_step: "inline validation + single submit"
+    destructive_action: "confirmation dialog (mandatory)"
+    success_feedback: "toast notification (auto-dismiss 5s)"
+    navigation_depth_3_plus: "breadcrumb trail (mandatory)"
+
   heuristics:
     decision:
       - id: "DSG001"
@@ -939,6 +951,13 @@ dependencies:
     - prototype-interaction.md    # Interactive prototype creation
     - user-flow-design.md         # User flow design and annotation
     - defensive-css-review.md     # Defensive CSS pattern application
+    - micro-interaction-design.md  # Micro-interaction library (hover, press, transitions)
+    - loading-state-patterns.md    # Loading UX (skeletons, optimistic UI, shimmer)
+    - empty-state-design.md        # Empty state design system (first-use, no-results, error)
+    - onboarding-flow-design.md    # Onboarding UX (tooltip tours, coachmarks, disclosure)
+    - icu-message-format.md        # ICU message format (pluralization, gender, ordinals)
+    - i18n-date-number-formatting.md # Locale-aware date/number/currency formatting
+    - rtl-layout-patterns.md       # RTL/BiDi layout (logical properties, mirroring)
   templates:
     - component-design-tmpl.md    # Component design specification template
     - layout-strategy-tmpl.md     # Layout strategy document template

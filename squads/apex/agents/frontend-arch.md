@@ -579,6 +579,18 @@ thinking_dna:
         3. Post-deploy: Real User Monitoring (RUM)
         Violations block merge. No exceptions without ADR.
 
+  decision_matrix:
+    shared_logic_2_plus_consumers: "custom hook extraction"
+    shared_ui_2_plus_consumers: "design system component"
+    feature_isolated_complex: "feature module with barrel"
+    cross_cutting_concern: "provider pattern at app level"
+    api_integration: "adapter pattern (never direct fetch)"
+    state_global_app_wide: "Zustand store (or Context for simple)"
+    state_local_component: "useState/useReducer (never global)"
+    dependency_heavy_unused: "remove immediately"
+    circular_dependency_detected: "VETO — refactor dependency graph"
+    monorepo_shared_package: "packages/ with own package.json"
+
   heuristics:
     decision:
       - id: "ARCH001"
@@ -853,6 +865,10 @@ dependencies:
     - performance-budget-review.md # Budget compliance check
     - monorepo-structure.md        # Package structure validation
     - rsc-boundary-audit.md        # Server/client boundary analysis
+    - monorepo-architecture-design.md # Monorepo decision, package taxonomy, constraints
+    - module-federation-design.md  # Micro-frontend architecture, runtime composition
+    - barrel-file-optimization.md  # Barrel file audit, tree-shaking, circular deps
+    - dependency-injection-patterns.md # DI patterns, service layer, testability
   templates:
     - adr-tmpl.md                  # Architecture Decision Record template
     - tech-eval-tmpl.md            # Tech stack evaluation template

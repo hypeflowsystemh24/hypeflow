@@ -66,6 +66,48 @@ visual_input_detection:
 
 ## How It Works
 
+### Step 0: Browser Capability Detection
+
+Before processing URL inputs, check browser automation availability:
+
+```yaml
+browser_detection:
+  check_order:
+    1. "Attempt to use Playwright MCP tools (browser_navigate, browser_screenshot)"
+    2. "If Playwright available → BROWSER_MODE: full interaction (navigate, click, screenshot, scroll)"
+    3. "If Playwright NOT available → FALLBACK_MODE: request manual screenshot from user"
+
+  browser_mode:
+    capabilities:
+      - "Navigate to any URL"
+      - "Take screenshots at multiple viewports (desktop 1440px, tablet 768px, mobile 375px)"
+      - "Click buttons, open modals, interact with elements"
+      - "Scroll to capture full page"
+      - "Fill forms, test interactions"
+    workflow: "Auto-capture screenshots → proceed to analysis"
+
+  fallback_mode:
+    message: |
+      I need a screenshot to analyze this page. Playwright browser automation
+      is not configured in this project.
+
+      **Options:**
+      1. Send me a screenshot (paste or drag & drop)
+      2. Send multiple screenshots (desktop + mobile) for responsive analysis
+      3. Configure Playwright: add to `.mcp.json` → `{"mcpServers":{"playwright":{"command":"npx","args":["@playwright/mcp@latest"]}}}`
+
+      Which option?
+    capabilities:
+      - "Full visual analysis of provided screenshots"
+      - "All 8 analysis dimensions work on screenshots"
+      - "Cannot interact with the page (no clicking, scrolling)"
+    workflow: "User provides screenshots → proceed to analysis"
+```
+
+**Rule:** NEVER fail silently when browser is unavailable. ALWAYS inform the user and offer alternatives.
+
+---
+
 ### Step 1: Identify What Was Sent
 
 ```yaml

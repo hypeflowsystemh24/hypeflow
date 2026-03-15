@@ -1,3 +1,5 @@
+> **DEPRECATED** — Scope absorbed into `accessibility-audit.md`. See `data/task-consolidation-map.yaml`.
+
 # Task: screen-reader-testing
 
 ```yaml

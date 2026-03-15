@@ -80,7 +80,7 @@ ELSE:
 
 ### Step 3: Check Agent Relevance
 
-For each of the 15 agents, check if their domain is relevant:
+For each of the 14 agents, check if their domain is relevant:
 
 ```yaml
 agent_relevance:

@@ -8,10 +8,10 @@
 #
 # Used by:  apex-pipeline-executor.md, wf-apex-pipeline.yaml
 # Owner:    apex-lead
-# Version:  1.0.0
+# Version:  1.1.0
 # ==============================================================================
 
-version: "1.0.0"
+version: "1.1.0"
 
 schema:
   pipeline:
@@ -74,6 +74,40 @@ schema:
       type: string
       format: "ISO 8601"
       description: "Last state update timestamp"
+
+    state_checksum:
+      type: string
+      format: "sha256"
+      description: "SHA-256 hash of serialized pipeline state (excluding this field). Computed on every state write, validated on every state read."
+      required: true
+      computed: "sha256(JSON.stringify(state, excludeKeys=['state_checksum']))"
+
+    schema_version:
+      type: string
+      description: "Schema version used to write this state. Used for forward-compatibility."
+      required: true
+      default: "1.1.0"
+
+  # ----------------------------------------------------------------------------
+  # INTEGRITY VALIDATION
+  # ----------------------------------------------------------------------------
+  integrity:
+    description: "Validation rules applied when reading pipeline state from disk"
+    on_read:
+      - step: "Compute checksum of loaded state (excluding state_checksum field)"
+        action: "Compare with stored state_checksum"
+        on_mismatch: "BLOCK — state corrupted or manually edited. Options: (1) *apex-resume --force to accept current state, (2) discard and start new pipeline"
+      - step: "Verify schema_version compatibility"
+        action: "Check schema_version against current schema"
+        on_mismatch: "WARN — attempt migration, or BLOCK if incompatible"
+      - step: "Validate required fields exist"
+        action: "Check all required: true fields are present"
+        on_mismatch: "BLOCK — incomplete state file"
+    on_write:
+      - step: "Compute SHA-256 of serialized state"
+        action: "Store in state_checksum field"
+      - step: "Validate all enum fields contain valid values"
+        action: "Reject write if invalid enum value detected"
 
   # ----------------------------------------------------------------------------
   # PHASES
@@ -310,6 +344,44 @@ schema:
       pipeline_type:
         type: string
         description: "Pipeline type used (apex-go, apex-step, apex-quick, apex-fix)"
+      phase_durations:
+        type: object
+        description: "Duration per phase in minutes (computed from started_at/completed_at)"
+        properties:
+          1_specify: { type: number }
+          2_design: { type: number }
+          3_architect: { type: number }
+          4_implement: { type: number }
+          5_polish: { type: number }
+          6_qa: { type: number }
+          7_ship: { type: number }
+      gate_failure_count:
+        type: integer
+        default: 0
+        description: "Total gate failures across all phases"
+      fix_iteration_count:
+        type: integer
+        default: 0
+        description: "Total fix iterations triggered by gate failures"
+
+  # ----------------------------------------------------------------------------
+  # ESCALATION LOG
+  # ----------------------------------------------------------------------------
+  escalation_log:
+    type: array
+    description: "Log of all escalation events during pipeline (gate failures, fix cycles, agent failures)"
+    items:
+      event_type:
+        type: enum
+        values: [gate_failure, fix_attempt, fix_success, fix_exhausted, agent_failure, timeout, manual_escalation]
+      gate_id: { type: string, description: "Gate that triggered escalation (if applicable)" }
+      veto_id: { type: string, description: "Specific veto condition that failed (if applicable)" }
+      agent: { type: string, description: "Agent involved in the event" }
+      phase: { type: integer }
+      iteration: { type: integer, description: "Attempt number (1st, 2nd, 3rd try)" }
+      detail: { type: string, description: "Human-readable description of what happened" }
+      resolution: { type: string, description: "How it was resolved (fixed, waived, escalated, aborted)" }
+      timestamp: { type: string, format: "ISO 8601" }
 
   # ----------------------------------------------------------------------------
   # PIVOT LOG
@@ -365,6 +437,10 @@ defaults:
     pivot_count: 0
     profile: ""
     pipeline_type: ""
+    phase_durations: {}
+    gate_failure_count: 0
+    fix_iteration_count: 0
+  escalation_log: []
   pivot_log: []
 
 # ==============================================================================

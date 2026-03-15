@@ -2,7 +2,7 @@
 
 ```yaml
 id: apex-discover-motion
-version: "1.0.0"
+version: "1.1.0"
 title: "Apex Discover Motion"
 description: >
   Inventories ALL animations and transitions in the project. Detects CSS
@@ -33,9 +33,9 @@ Inventories all animations and transitions in the project.
 
 ---
 
-## How It Works
+## Discovery Phases
 
-### Step 1: Detect Animation Libraries
+### Phase 1: Detect Animation Libraries
 
 ```yaml
 detection:
@@ -63,7 +63,7 @@ detection:
     library_count: N
 ```
 
-### Step 2: Build Animation Inventory
+### Phase 2: Build Animation Inventory
 
 ```yaml
 inventory:
@@ -91,7 +91,7 @@ inventory:
     micro: "Micro-interactions (button press, toggle, etc.)"
 ```
 
-### Step 3: Detect Issues
+### Phase 3: Detect Issues
 
 ```yaml
 checks:
@@ -143,7 +143,7 @@ checks:
     severity: LOW
 ```
 
-### Step 4: Calculate Motion Health Score
+### Phase 4: Calculate Motion Health Score
 
 ```yaml
 health_score:
@@ -162,7 +162,7 @@ health_score:
     0-49: "janky — motion needs overhaul"
 ```
 
-### Step 5: Output
+### Phase 5: Output
 
 ```yaml
 output_format: |
@@ -200,22 +200,59 @@ output_format: |
 
 ---
 
+## Integration with Other Tasks
+
+```yaml
+feeds_into:
+  apex-suggest:
+    what: "Motion issues become proactive suggestions"
+    how: "CSS transitions, missing reduced-motion flagged"
+  apex-audit:
+    what: "Motion health feeds audit report"
+    how: "Health score part of project readiness"
+  motion-eng:
+    what: "Matt receives complete animation inventory"
+    how: "No manual exploration needed"
+  a11y-eng:
+    what: "Reduced-motion gaps feed a11y audit"
+    how: "Missing prefers-reduced-motion detected"
+  veto_gate_QG-AX-005:
+    what: "Missing reduced-motion feeds a11y gate"
+    how: "Discovery provides exact violations for QG-AX-005"
+  veto_gate_QG-AX-006:
+    what: "CSS transition violations feed motion gate"
+    how: "Discovery provides exact violations for QG-AX-006"
+```
+
+---
+
 ## Veto Conditions
 
 ```yaml
 veto_conditions:
-  - id: VC-DM-MOTION-001
+  - id: VC-DISC-MOTION-001
     condition: "Interactive element uses CSS transition instead of spring"
     action: "WARN — Feeds QG-AX-006. Convert to spring physics."
     available_check: "manual"
     on_unavailable: MANUAL_CHECK
+    feeds_gate: QG-AX-006
 
-  - id: VC-DM-MOTION-002
+  - id: VC-DISC-MOTION-002
     condition: "Animation found without prefers-reduced-motion handling"
     action: "WARN — Feeds QG-AX-005. Add reduced motion alternative."
     available_check: "manual"
     on_unavailable: MANUAL_CHECK
+    feeds_gate: QG-AX-005
 ```
+
+---
+
+## Handoff
+
+| Field | Value |
+|-------|-------|
+| Delivers to | apex-lead (overview), motion-eng (animation decisions), a11y-eng (reduced-motion) |
+| Next action | User fixes veto violations or continues |
 
 ---
 
@@ -233,4 +270,22 @@ cache:
 
 ---
 
-*Apex Squad — Discover Motion Task v1.0.0*
+## Edge Cases
+
+```yaml
+edge_cases:
+  - condition: "Project with zero animations"
+    action: "REPORT — motion health 100/100, no issues"
+  - condition: "CSS-only project (no JS animation library)"
+    action: "ADAPT — scan CSS only, skip library detection"
+  - condition: "Server-rendered pages with no client JS"
+    action: "ADAPT — scan CSS animations only"
+```
+
+---
+
+`schema_ref: data/discovery-output-schema.yaml`
+
+---
+
+*Apex Squad — Discover Motion Task v1.1.0*

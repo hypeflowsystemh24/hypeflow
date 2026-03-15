@@ -521,6 +521,18 @@ thinking_dna:
           level: "AAA"
           ratio: "7:1 for normal text, 4.5:1 for large text"
 
+    decision_matrix:
+      interactive_no_label: "VETO — add aria-label or visible label"
+      image_decorative: "aria-hidden='true' + alt=''"
+      image_informative: "descriptive alt text (mandatory)"
+      modal_opened: "focus trap + aria-modal + Escape closes"
+      color_contrast_below_4_5: "VETO — fix contrast ratio"
+      color_contrast_below_3_0_large: "VETO — fix contrast ratio"
+      touch_target_below_44px: "VETO — minimum 44x44px"
+      heading_level_skipped: "VETO — fix heading hierarchy"
+      form_error_state: "aria-invalid + aria-describedby + visible message"
+      dynamic_content_update: "aria-live='polite' region"
+
   heuristics:
     decision:
       - id: "A11Y001"
@@ -901,6 +913,22 @@ dependencies:
     - name: "screen-reader-testing"
       path: "tasks/screen-reader-testing.md"
       description: "Screen reader testing across AT matrix"
+
+    - name: "color-contrast-automation"
+      path: "tasks/color-contrast-automation.md"
+      description: "Automated WCAG color contrast validation across codebase"
+
+    - name: "keyboard-navigation-patterns"
+      path: "tasks/keyboard-navigation-patterns.md"
+      description: "Comprehensive keyboard navigation for complex UI patterns"
+
+    - name: "aria-live-region-design"
+      path: "tasks/aria-live-region-design.md"
+      description: "ARIA live region architecture for dynamic content updates"
+
+    - name: "touch-target-audit"
+      path: "tasks/touch-target-audit.md"
+      description: "Touch/click target size audit per WCAG 2.2 SC 2.5.8"
 
   checklists:
     - name: "a11y-review-checklist"

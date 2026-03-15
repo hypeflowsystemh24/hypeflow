@@ -1,3 +1,5 @@
+> **DEPRECATED** — Scope absorbed into `keyboard-navigation-patterns.md`. See `data/task-consolidation-map.yaml`.
+
 # Task: focus-management-design
 
 ```yaml

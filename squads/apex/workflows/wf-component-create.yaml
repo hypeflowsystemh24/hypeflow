@@ -928,3 +928,38 @@ standards:
   - Storybook: all variants documented with all arg controls enabled
   - Motion: all animations respect prefers-reduced-motion
   - Component API: follows existing patterns in packages/ui/
+
+# ==============================================================================
+# ROLLBACK PROTOCOL
+# ==============================================================================
+# Added to ensure every workflow has a documented recovery path.
+# Triggered when a phase fails and cannot be resolved in-place.
+# ==============================================================================
+
+rollback:
+  trigger: "Phase failure that cannot be resolved within the current phase"
+
+  phases:
+    - phase-1-design
+    - phase-2-implement
+    - phase-3-animate
+    - phase-4-audit
+    - phase-5-test
+
+  protocol:
+    step_1: "SNAPSHOT — Capture current state (git stash or checkpoint commit)"
+    step_2: "IDENTIFY — Determine which phase introduced the failure"
+    step_3: "REVERT — Roll back changes from the failed phase only"
+    step_4: "VERIFY — Confirm the pre-failure state is restored and stable"
+    step_5: "REPORT — Document what failed, why, and what was rolled back"
+    step_6: "RETRY or ESCALATE — Re-attempt the phase or escalate to apex-lead"
+
+  scope: "per-phase"
+  method: "git-based"
+
+  rules:
+    - "NEVER rollback more than 1 phase at a time"
+    - "ALWAYS create a checkpoint commit before retrying"
+    - "If rollback fails → escalate to apex-lead immediately"
+    - "Preserve all artifacts from the failed attempt for debugging"
+    - "User must approve rollback before execution"

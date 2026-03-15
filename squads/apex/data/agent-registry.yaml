@@ -7,7 +7,7 @@ registry:
   tiers:
     orchestrator: apex-lead
     tier_1: [frontend-arch]
-    tier_2: [interaction-dsgn, design-sys-eng]
+    tier_2: [interaction-dsgn, design-sys-eng, web-intel]
     tier_3: [css-eng, react-eng, mobile-eng, cross-plat-eng, spatial-eng]
     tier_4: [motion-eng, a11y-eng, perf-eng]
     tier_5: [qa-visual, qa-xplatform]
@@ -82,6 +82,32 @@ registry:
         - theme
         - sync-figma
         - audit-tokens
+        - help
+        - exit
+
+    - id: web-intel
+      name: Kilian
+      icon: "🔍"
+      tier: 2
+      dna_source: "Kilian Valkhof (Creator of Polypane & Superposition, Electron governance)"
+      role: "Web Intelligence Engineer — Design Extraction Specialist"
+      file: agents/web-intel.md
+      aliases: [web-intel, scout, intel]
+      commands:
+        - scrape
+        - extract-tokens
+        - analyze-patterns
+        - asset-hunt
+        - compare
+        - color-audit
+        - type-audit
+        - responsive-scan
+        - motion-scan
+        - asset-optimize
+        - asset-3d
+        - image-enhance
+        - fuse
+        - inspire
         - help
         - exit
 

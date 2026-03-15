@@ -302,6 +302,14 @@ intent_chaining:
         suggest_tertiary: "Descobrir componentes"
         suggest_tertiary_pipeline: "*discover-components"
 
+      - if: "route_health < 80 AND orphan_routes == 0 AND dead_routes == 0"
+        suggest_primary: "Revisar SEO gaps e issues de rotas"
+        suggest_primary_pipeline: "*discover-routes (review SEO gaps)"
+        suggest_secondary: "Corrigir issues de rotas"
+        suggest_secondary_pipeline: "*apex-fix (address route issues)"
+        suggest_tertiary: "Descobrir componentes"
+        suggest_tertiary_pipeline: "*discover-components"
+
       - if: "route_health >= 80"
         suggest_primary: "Rotas saudaveis! Descobrir componentes"
         suggest_primary_pipeline: "*discover-components"
@@ -337,6 +345,14 @@ intent_chaining:
         suggest_secondary_pipeline: "*apex-fix (cleanup)"
         suggest_tertiary: "Done"
 
+      - if: "dep_health < 80 AND critical_vulnerabilities == 0 AND heavy_count == 0"
+        suggest_primary: "Revisar pacotes desatualizados"
+        suggest_primary_pipeline: "*discover-dependencies (review outdated)"
+        suggest_secondary: "Atualizar pacotes"
+        suggest_secondary_pipeline: "*apex-fix (update packages)"
+        suggest_tertiary: "Descobrir performance"
+        suggest_tertiary_pipeline: "*discover-performance"
+
       - if: "dep_health >= 80"
         suggest_primary: "Dependencias saudaveis! Descobrir performance"
         suggest_primary_pipeline: "*discover-performance"
@@ -362,6 +378,14 @@ intent_chaining:
         suggest_secondary: "Adicionar reduced-motion em {missing_rm} componentes"
         suggest_secondary_pipeline: "*apex-quick (reduced-motion)"
         suggest_tertiary: "So quero o inventario"
+
+      - if: "motion_health < 80 AND veto_violations == 0"
+        suggest_primary: "Revisar exit animations faltando"
+        suggest_primary_pipeline: "*discover-motion (review missing exits)"
+        suggest_secondary: "Adicionar exit animations"
+        suggest_secondary_pipeline: "*apex-fix (add exit animations)"
+        suggest_tertiary: "Descobrir acessibilidade"
+        suggest_tertiary_pipeline: "*discover-a11y"
 
       - if: "motion_health >= 80 AND veto_violations == 0"
         suggest_primary: "Motion saudavel! Descobrir acessibilidade"
@@ -391,6 +415,14 @@ intent_chaining:
         suggest_secondary_pipeline: "*apex-quick (a11y)"
         suggest_tertiary: "Rodar audit completo com axe-core"
 
+      - if: "a11y_health < 80 AND critical_count == 0"
+        suggest_primary: "Corrigir issues HIGH de acessibilidade"
+        suggest_primary_pipeline: "*apex-fix (address HIGH issues)"
+        suggest_secondary: "Re-escanear acessibilidade"
+        suggest_secondary_pipeline: "*discover-a11y (re-scan)"
+        suggest_tertiary: "Descobrir performance"
+        suggest_tertiary_pipeline: "*discover-performance"
+
       - if: "a11y_health >= 80"
         suggest_primary: "Boa acessibilidade! Descobrir performance"
         suggest_primary_pipeline: "*discover-performance"
@@ -419,6 +451,14 @@ intent_chaining:
         suggest_secondary_pipeline: "*apex-fix (lazy)"
         suggest_tertiary: "Bundle analysis detalhado"
 
+      - if: "perf_health < 80 AND cwv_risks <= 3"
+        suggest_primary: "Otimizar imagens e lazy loading"
+        suggest_primary_pipeline: "*apex-fix (optimize images/lazy)"
+        suggest_secondary: "Re-escanear performance"
+        suggest_secondary_pipeline: "*discover-performance (re-scan)"
+        suggest_tertiary: "Rodar audit completo"
+        suggest_tertiary_pipeline: "*apex-audit"
+
       - if: "perf_health >= 80"
         suggest_primary: "Performance ok! Rodar audit completo"
         suggest_primary_pipeline: "*apex-audit"
@@ -430,6 +470,400 @@ intent_chaining:
       Performance analisada. {components_scanned} componentes.
       Performance Health Score: {perf_health}/100
       CWV risks: {cwv_risks} | Lazy gaps: {lazy_gaps} | Image issues: {image_issues}
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_discover_state:
+    output_format:
+      always_show: ["state_health", "total_state_sources", "context_providers", "prop_drilling_chains"]
+    conditions:
+      - if: "context_no_slice > 0 OR missing_memoization > 0"
+        suggest_primary: "Corrigir re-renders de context ({context_no_slice} sem slice, {missing_memoization} sem memo)"
+        suggest_primary_pipeline: "*apex-fix (fix context re-render issues)"
+        suggest_secondary: "Re-escanear state"
+        suggest_secondary_pipeline: "*discover-state (re-scan)"
+        suggest_tertiary: "Descobrir performance"
+        suggest_tertiary_pipeline: "*discover-performance"
+
+      - if: "state_health < 80"
+        suggest_primary: "Simplificar gerenciamento de state"
+        suggest_primary_pipeline: "*apex-fix (simplify state)"
+        suggest_secondary: "Re-escanear state"
+        suggest_secondary_pipeline: "*discover-state (re-scan)"
+        suggest_tertiary: "Descobrir componentes"
+        suggest_tertiary_pipeline: "*discover-components"
+
+      - if: "state_health >= 80"
+        suggest_primary: "State saudavel! Descobrir types"
+        suggest_primary_pipeline: "*discover-types"
+        suggest_secondary: "Descobrir performance"
+        suggest_secondary_pipeline: "*discover-performance"
+        suggest_tertiary: "Rodar audit completo"
+        suggest_tertiary_pipeline: "*apex-audit"
+
+  after_discover_types:
+    trigger: "After *discover-types completes"
+    conditions:
+      - if: "any_count > 0 OR unsafe_cast_count > 0"
+        suggest_primary: "Fix type safety issues"
+        suggest_primary_pipeline: "*apex-fix (type safety)"
+        suggest_secondary: "Run *discover-forms (next in chain)"
+        suggest_secondary_pipeline: "*discover-forms"
+        suggest_tertiary: "Done"
+        suggest_tertiary_pipeline: null
+      - if: "health_score >= 80"
+        suggest_primary: "Run *discover-forms (next in chain)"
+        suggest_primary_pipeline: "*discover-forms"
+        suggest_secondary: "Run full sweep *apex-full"
+        suggest_secondary_pipeline: "*apex-full"
+        suggest_tertiary: "Done"
+        suggest_tertiary_pipeline: null
+
+  after_discover_forms:
+    trigger: "After *discover-forms completes"
+    conditions:
+      - if: "double_submit_risks > 0 OR form_a11y_issues > 0"
+        suggest_primary: "Fix form issues"
+        suggest_primary_pipeline: "*apex-fix (form fixes)"
+        suggest_secondary: "Run *discover-security (next in chain)"
+        suggest_secondary_pipeline: "*discover-security"
+        suggest_tertiary: "Done"
+        suggest_tertiary_pipeline: null
+      - if: "health_score >= 80"
+        suggest_primary: "Run *discover-security (next in chain)"
+        suggest_primary_pipeline: "*discover-security"
+        suggest_secondary: "Done"
+        suggest_secondary_pipeline: null
+        suggest_tertiary: null
+        suggest_tertiary_pipeline: null
+
+  after_discover_security:
+    trigger: "After *discover-security completes (LAST in chain)"
+    conditions:
+      - if: "xss_vectors > 0 OR exposed_secrets > 0"
+        suggest_primary: "Fix security issues IMMEDIATELY"
+        suggest_primary_pipeline: "*apex-fix (security)"
+        suggest_secondary: "Run full sweep summary"
+        suggest_secondary_pipeline: "*apex-score"
+        suggest_tertiary: "Done"
+        suggest_tertiary_pipeline: null
+      - if: "health_score >= 80"
+        suggest_primary: "View overall score"
+        suggest_primary_pipeline: "*apex-score"
+        suggest_secondary: "Done"
+        suggest_secondary_pipeline: null
+        suggest_tertiary: null
+        suggest_tertiary_pipeline: null
+
+  after_i18n_audit:
+    conditions:
+      - if: "i18n_health < 50"
+        suggest_primary: "Setup i18n library ({recommended_library})"
+        suggest_primary_pipeline: "*apex-quick (i18n setup)"
+        suggest_secondary: "Converter physical → logical CSS ({physical_count} propriedades)"
+        suggest_secondary_pipeline: "*apex-fix (rtl)"
+        suggest_tertiary: "So quero o relatorio"
+
+      - if: "i18n_health >= 50 AND i18n_health < 80"
+        suggest_primary: "Corrigir {hardcoded_count} strings hardcoded (top {top_files} arquivos)"
+        suggest_primary_pipeline: "*apex-quick (i18n strings)"
+        suggest_secondary: "Converter physical → logical CSS"
+        suggest_secondary_pipeline: "*apex-fix (rtl)"
+        suggest_tertiary: "Done"
+
+      - if: "i18n_health >= 80"
+        suggest_primary: "i18n saudavel! Verificar error boundaries"
+        suggest_primary_pipeline: "*apex-error-boundary"
+        suggest_secondary: "Rodar audit completo"
+        suggest_secondary_pipeline: "*apex-audit"
+        suggest_tertiary: "Done"
+
+    output_format: |
+      i18n Audit concluida. {hardcoded_count} strings hardcoded em {file_count} arquivos.
+      i18n Health Score: {i18n_health}/100 ({classification})
+      RTL readiness: {rtl_status} | Text overflow risks: {overflow_risks}
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_error_boundary:
+    conditions:
+      - if: "unprotected_routes > 0"
+        suggest_primary: "URGENTE: Proteger {unprotected_routes} rotas sem boundary (white screen risk)"
+        suggest_primary_pipeline: "*apex-quick (error boundaries)"
+        suggest_secondary: "Isolar {unprotected_third_party} componentes third-party"
+        suggest_secondary_pipeline: "*apex-fix (boundary isolation)"
+        suggest_tertiary: "So quero o relatorio"
+
+      - if: "unprotected_routes == 0 AND missing_layers > 0"
+        suggest_primary: "Adicionar {missing_layers} camadas faltando (feature/component level)"
+        suggest_primary_pipeline: "*apex-quick (boundary layers)"
+        suggest_secondary: "Adicionar recovery patterns"
+        suggest_secondary_pipeline: "*apex-fix (recovery)"
+        suggest_tertiary: "Done"
+
+      - if: "unprotected_routes == 0 AND missing_layers == 0"
+        suggest_primary: "Error boundaries completos! Verificar i18n"
+        suggest_primary_pipeline: "*apex-i18n-audit"
+        suggest_secondary: "Rodar audit completo"
+        suggest_secondary_pipeline: "*apex-audit"
+        suggest_tertiary: "Done"
+
+    output_format: |
+      Error Boundary Audit concluida. {existing_boundaries} boundaries encontradas.
+      Rotas desprotegidas: {unprotected_routes} | Async sem boundary: {unprotected_async}
+      Third-party sem isolamento: {unprotected_third_party}
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_rollback:
+    conditions:
+      - if: "rollback_success"
+        suggest_primary: "Retomar pipeline do checkpoint {target_checkpoint}"
+        suggest_primary_pipeline: "*apex-resume"
+        suggest_secondary: "Ver status do pipeline"
+        suggest_secondary_pipeline: "*apex-status"
+        suggest_tertiary: "Done"
+
+      - if: "rollback_failed"
+        suggest_primary: "Ver estado do pipeline"
+        suggest_primary_pipeline: "*apex-status"
+        suggest_secondary: "Abortar pipeline"
+        suggest_secondary_pipeline: "*apex-abort"
+        suggest_tertiary: "Tentar rollback manual"
+
+    output_format: |
+      Rollback {status}. Restaurado para checkpoint {target_checkpoint}.
+      Backup salvo em: {backup_ref}
+      Fases resetadas: {reset_phases}
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  # ============================================================================
+  # VISION / SWEEP INTENT CHAINS
+  # ============================================================================
+
+  after_vision_sweep:
+    description: "After *apex-vision completes full visual sweep"
+    conditions:
+      - if: "high_findings > 0"
+        suggest_primary: "Fix all HIGH ({high_findings} fixes)"
+        suggest_primary_pipeline: "navigator → batch fix HIGH"
+        suggest_secondary: "Detalhar por domínio"
+        suggest_secondary_pipeline: "navigator → level 1"
+        suggest_tertiary: "Detalhar por seção (hero, header...)"
+        suggest_tertiary_pipeline: "navigator → level 2 (region)"
+        suggest_extra:
+          - "Comparar com referência (manda outro print/URL)"
+          - "Gerar relatório completo"
+          - "Done"
+
+      - if: "high_findings == 0 AND medium_findings > 0"
+        suggest_primary: "Corrigir {medium_findings} MEDIUM findings"
+        suggest_primary_pipeline: "navigator → batch fix MEDIUM"
+        suggest_secondary: "Detalhar por domínio"
+        suggest_secondary_pipeline: "navigator → level 1"
+        suggest_tertiary: "Done — nada crítico"
+
+      - if: "high_findings == 0 AND medium_findings == 0"
+        suggest_primary: "Score alto! Comparar com referência premium"
+        suggest_primary_pipeline: "*apex-compare"
+        suggest_secondary: "Rodar sweep de código também (*apex-full)"
+        suggest_secondary_pipeline: "*apex-full"
+        suggest_tertiary: "Done — app excelente"
+
+    output_format: |
+      ═══════════════════════════════════════════════════
+       📸 APEX VISION — Sweep Completo
+       Source: [{source_type}] {source_name} / {viewport}
+      ═══════════════════════════════════════════════════
+
+       APEX SCORE: {score}/100  {score_bar}
+
+       {domain_breakdown}
+
+       Estrutura detectada:
+        {structure_summary}
+
+       {total_findings} findings: {high_findings} HIGH │ {medium_findings} MEDIUM │ {low_findings} LOW
+
+       ─────────────────────────────────────────────
+       1. {suggest_primary}
+       2. {suggest_secondary}
+       3. {suggest_tertiary}
+       {extra_options}
+
+       Ou diga naturalmente: "melhora o hero", "corrige a11y",
+       "quero estilo Stripe", "mostra o mobile"
+      ═══════════════════════════════════════════════════
+
+  after_full_sweep:
+    description: "After *apex-full completes code-only sweep"
+    conditions:
+      - if: "high_findings > 0"
+        suggest_primary: "Fix all HIGH ({high_findings} fixes)"
+        suggest_primary_pipeline: "navigator → batch fix HIGH"
+        suggest_secondary: "Detalhar por domínio"
+        suggest_secondary_pipeline: "navigator → level 1"
+        suggest_tertiary: "Combinar com *apex-vision (manda print/URL)"
+        suggest_tertiary_pipeline: "*apex-vision"
+
+      - if: "high_findings == 0 AND score < 85"
+        suggest_primary: "Resolver MEDIUM findings"
+        suggest_primary_pipeline: "navigator → batch fix MEDIUM"
+        suggest_secondary: "Combinar com análise visual (*apex-vision)"
+        suggest_secondary_pipeline: "*apex-vision"
+        suggest_tertiary: "Done"
+
+      - if: "score >= 85"
+        suggest_primary: "Código sólido! Rodar análise visual (*apex-vision)"
+        suggest_primary_pipeline: "*apex-vision"
+        suggest_secondary: "Comparar com referência"
+        suggest_secondary_pipeline: "*apex-compare"
+        suggest_tertiary: "Done — projeto saudável"
+
+    output_format: |
+      ═══════════════════════════════════════════════════
+       📊 APEX FULL — Codebase Sweep
+       Project: {project_name} │ Stack: {stack}
+      ═══════════════════════════════════════════════════
+
+       APEX CODE SCORE: {score}/100  {score_bar}
+
+       {discovery_breakdown}
+
+       {total_findings} findings: {high_findings} HIGH │ {medium_findings} MEDIUM │ {low_findings} LOW
+
+       ─────────────────────────────────────────────
+       1. {suggest_primary}
+       2. {suggest_secondary}
+       3. {suggest_tertiary}
+
+       Ou: "corrige a11y", "atualiza deps", "mostra orphans", "foca em perf"
+      ═══════════════════════════════════════════════════
+
+  after_navigator_fix:
+    description: "After a fix is applied inside the Navigator"
+    suggest_primary: "Next finding ({next_finding_preview})"
+    suggest_secondary: "Fix remaining {severity} ({remaining_count} left)"
+    suggest_tertiary: "Back to {current_level}"
+    suggest_extra:
+      - "Overview (ver scores atualizados)"
+      - "Done"
+
+    output_format: |
+       ✅ Fixed: {finding_description}
+       File: {file_path}:{line}
+
+       {domain}: {old_score} → {new_score} (+{delta})  │  Apex Score: {old_apex} → {new_apex} (+{apex_delta})
+
+       Remaining in {domain}: {remaining_count} findings ({remaining_breakdown})
+
+       1. {suggest_primary}
+       2. {suggest_secondary}
+       3. {suggest_tertiary}
+       {extra_options}
+
+  after_navigator_batch:
+    description: "After a batch fix completes inside Navigator"
+    suggest_primary: "Continue with {next_severity} findings"
+    suggest_secondary: "Overview (ver scores atualizados)"
+    suggest_tertiary: "Commit changes"
+    suggest_extra:
+      - "Done"
+
+    output_format: |
+       ✅ Batch Fix Complete — {fixed_count} findings resolved
+
+       Files modified: {files_count}
+       {file_list}
+
+       Score: {old_score} → {new_score} (+{delta})  │  Remaining: {remaining_count} findings ({remaining_breakdown})
+
+       typecheck: {typecheck_status}  │  lint: {lint_status}
+
+       1. {suggest_primary}
+       2. {suggest_secondary}
+       3. {suggest_tertiary}
+       {extra_options}
+
+  after_url_capture:
+    description: "After URL is captured and screenshots taken"
+    conditions:
+      - if: "url_reachable AND captures_successful"
+        suggest_primary: "Analisar (sweep completo em todas viewports)"
+        suggest_primary_pipeline: "visual-intelligence-sweep (all viewports)"
+        suggest_secondary: "Analisar só desktop (mais rápido)"
+        suggest_secondary_pipeline: "visual-intelligence-sweep (desktop only)"
+        suggest_tertiary: "Comparar com print que já mandei"
+        suggest_tertiary_pipeline: "*apex-compare (url vs screenshot)"
+
+      - if: "url_unreachable"
+        suggest_primary: "Manda um print ao invés"
+        suggest_secondary: "Tentar outra URL"
+        suggest_tertiary: "Sweep só por código (*apex-full)"
+
+    output_format: |
+       🌐 URL capturada: {url}
+       Status: {http_status} │ TTFB: {ttfb}ms │ SSL: {ssl_status}
+       Screenshots: Desktop ✅ │ Tablet ✅ │ Mobile ✅
+
+       1. {suggest_primary}
+       2. {suggest_secondary}
+       3. {suggest_tertiary}
+
+  after_drift_detection:
+    description: "After comparing screenshot vs live URL (cross-reference)"
+    conditions:
+      - if: "drift_detected AND drift_percent > 5"
+        suggest_primary: "Analisar versão live (mais recente)"
+        suggest_primary_pipeline: "visual-intelligence-sweep (live captures)"
+        suggest_secondary: "Ver diff visual (screenshot vs live)"
+        suggest_tertiary: "Analisar screenshot (versão do print)"
+
+      - if: "drift_percent <= 5"
+        suggest_primary: "Print e site iguais — rodar sweep na versão live"
+        suggest_primary_pipeline: "visual-intelligence-sweep (live)"
+        suggest_secondary: "Done"
+
+    output_format: |
+       🔄 Drift Detection: {drift_status}
+       Screenshot score: {screenshot_score}/100 → Live score: {live_score}/100
+       Delta: {drift_percent}% ({drift_regions} regiões mudaram)
+
+       1. {suggest_primary}
+       2. {suggest_secondary}
+       3. {suggest_tertiary}
+
+  after_dry_run:
+    suggest_primary: "Executar o pipeline planejado"
+    suggest_primary_pipeline: "*apex-go {original_description}"
+    suggest_secondary: "Executar em modo guiado (fase por fase)"
+    suggest_secondary_pipeline: "*apex-step {original_description}"
+    suggest_tertiary: "Ajustar e re-planejar"
+
+    output_format: |
+      Dry-run concluido. Pipeline: {selected_pipeline} ({phase_count} fases).
+      Agentes: {agent_list} | Gates: {active_gates}/{total_gates} ativos
 
       Proximo passo:
         1. {suggest_primary}
@@ -505,6 +939,275 @@ intent_chaining:
         suggest_secondary_pipeline: "*apex-fix"
         suggest_tertiary: "Done — estilo aplicado"
 
+  after_asset_check:
+    trigger: "asset-check viability assessment completes"
+    options:
+      - label: "Zona verde — proceed with asset pipeline"
+        command: "*asset-pipeline"
+        condition: "zone == green"
+      - label: "Zona yellow — proceed with caveats shown"
+        command: "*asset-pipeline"
+        condition: "zone == yellow"
+      - label: "Zona red — extract brand palette instead (Diana)"
+        command: "*brand-palette"
+        condition: "zone == red"
+      - label: "Simplificar request para zona green"
+        command: "*asset-check"
+      - label: "Done"
+        command: null
+    output_hint: "Viability check completa. Zone: {zone}. Próximo passo?"
+
+  after_asset_pipeline:
+    trigger: "asset-pipeline or logo or icon-create completes"
+    options:
+      - label: "Integrar assets ao design system"
+        command: "*apex-quick"
+        context: "integrate created assets"
+      - label: "Rodar audit visual dos assets"
+        command: "*apex-analyze"
+      - label: "Criar mais assets com mesma paleta"
+        command: "*asset-pipeline"
+      - label: "Done"
+        command: null
+    output_hint: "Asset pipeline completa. Próximo passo?"
+
+  after_icon_system:
+    trigger: "icon-system completes (any mode)"
+    options:
+      - label: "Criar icon customizado"
+        command: "*icon-create"
+        condition: "mode == audit || mode == setup"
+      - label: "Migrar para library padrão"
+        command: "*icon-system migrate"
+        condition: "mode == audit && consistency_score < 80"
+      - label: "Auditar sistema novamente"
+        command: "*icon-system audit"
+        condition: "mode == create || mode == migrate"
+      - label: "Exportar tokens"
+        command: "*apex-export-tokens"
+      - label: "Done"
+        command: null
+    output_hint: "Icon system {mode} completa. Próximo passo?"
+
+  after_greenfield:
+    trigger: "apex-greenfield completes (any phase)"
+    options:
+      - label: "Rodar visual sweep no projeto criado"
+        command: "*apex-vision"
+      - label: "Aplicar preset de estilo"
+        command: "*apex-inspire"
+      - label: "Auditar acessibilidade"
+        command: "*discover-a11y"
+      - label: "Deploy preview"
+        command: "*apex-ship"
+      - label: "Done"
+        command: null
+    output_hint: "Greenfield completo. Projeto rodando. Próximo passo?"
+
+  after_scrape:
+    trigger: "scrape or extract-tokens from URL completes"
+    options:
+      - label: "Fundir tokens extraídos ao projeto"
+        command: "*fuse"
+      - label: "Comparar com design system atual"
+        command: "*compare"
+      - label: "Extrair mais de outra URL"
+        command: "*scrape"
+      - label: "Done"
+        command: null
+    output_hint: "Extração completa. {token_count} tokens extraídos. Próximo passo?"
+
+  after_extract_tokens:
+    trigger: "extract-tokens completes (standalone)"
+    options:
+      - label: "Fundir tokens ao projeto"
+        command: "*fuse"
+      - label: "Auditar contraste dos tokens"
+        command: "*color-audit"
+      - label: "Comparar com tokens existentes"
+        command: "*discover-token-drift"
+      - label: "Done"
+        command: null
+    output_hint: "Tokens extraídos. Próximo passo?"
+
+  after_asset_hunt:
+    trigger: "asset-hunt completes"
+    options:
+      - label: "Otimizar assets encontrados"
+        command: "*asset-optimize"
+      - label: "Buscar mais assets"
+        command: "*asset-hunt"
+      - label: "Integrar ao projeto"
+        command: "*apex-quick"
+        context: "integrate curated assets"
+      - label: "Done"
+        command: null
+    output_hint: "Asset hunt completo. {asset_count} assets curados. Próximo passo?"
+
+  after_responsive_scan:
+    trigger: "responsive-scan completes"
+    options:
+      - label: "Corrigir breakpoints detectados"
+        command: "*apex-fix"
+        context: "responsive breakpoint fixes"
+      - label: "Aplicar fluid values ao projeto"
+        command: "*fuse"
+      - label: "Scan de motion por viewport"
+        command: "*motion-scan"
+      - label: "Done"
+        command: null
+    output_hint: "Responsive scan completo. {breakpoint_count} breakpoints mapeados. Próximo passo?"
+
+  after_motion_scan:
+    trigger: "motion-scan completes"
+    options:
+      - label: "Aplicar spring configs extraídos"
+        command: "*fuse"
+        context: "motion tokens"
+      - label: "Auditar motion do projeto"
+        command: "*discover-motion"
+      - label: "Comparar com animações atuais"
+        command: "*motion-audit"
+      - label: "Done"
+        command: null
+    output_hint: "Motion scan completo. {animation_count} animações mapeadas. Próximo passo?"
+
+  after_fuse:
+    trigger: "fuse (token merge) completes"
+    options:
+      - label: "Rodar visual regression"
+        command: "*apex-vision"
+      - label: "Auditar contraste pós-merge"
+        command: "*discover-a11y"
+      - label: "Ver sugestões pós-merge"
+        command: "*apex-suggest"
+      - label: "Done"
+        command: null
+    output_hint: "Tokens fundidos ao projeto. {merged_count} tokens integrados. Próximo passo?"
+
+  after_dark_mode_audit:
+    trigger: "apex-dark-mode audit completes"
+    options:
+      - label: "Corrigir tokens dark mode"
+        command: "*apex-fix"
+        context: "dark mode token fixes"
+      - label: "Auditar contraste dark"
+        command: "*discover-a11y"
+        context: "dark mode only"
+      - label: "Visual comparison light vs dark"
+        command: "*apex-compare"
+      - label: "Done"
+        command: null
+    output_hint: "Dark mode audit completo. {issue_count} issues encontradas. Próximo passo?"
+
+  after_design_critique:
+    trigger: "apex-critique completes"
+    options:
+      - label: "Aplicar melhorias sugeridas"
+        command: "*apex-quick"
+        context: "critique improvements"
+      - label: "Comparar com referência"
+        command: "*compare"
+      - label: "Transformar com preset"
+        command: "*apex-transform"
+      - label: "Done"
+        command: null
+    output_hint: "Design critique completo. Score: {score}/100. Próximo passo?"
+
+  after_export_tokens:
+    trigger: "apex-export-tokens completes"
+    options:
+      - label: "Exportar em outro formato"
+        command: "*apex-export-tokens"
+      - label: "Auditar token drift"
+        command: "*discover-token-drift"
+      - label: "Done"
+        command: null
+    output_hint: "Tokens exportados em {format}. Próximo passo?"
+
+  after_refactor:
+    trigger: "apex-refactor completes"
+    options:
+      - label: "Rodar testes no refatorado"
+        command: "*apex-integration-test"
+      - label: "Auditar acessibilidade pós-refactor"
+        command: "*discover-a11y"
+      - label: "Visual regression"
+        command: "*apex-vision"
+      - label: "Done"
+        command: null
+    output_hint: "Refactoring completo. {files_modified} arquivos modificados. Próximo passo?"
+
+  after_code_review:
+    trigger: "apex-review completes"
+    options:
+      - label: "Corrigir findings HIGH"
+        command: "*apex-fix"
+        context: "review findings HIGH priority"
+      - label: "Batch fix all findings"
+        command: "*apex-quick"
+        context: "review findings batch"
+      - label: "Done"
+        command: null
+    output_hint: "Code review completo. {finding_count} findings. Próximo passo?"
+
+  after_discover_external_assets:
+    trigger: "discover-external-assets completes"
+    max_iterations: 2
+    options:
+      - label: "Corrigir links quebrados"
+        command: "*apex-fix"
+        context: "broken asset links"
+      - label: "Otimizar assets pesados"
+        command: "*asset-optimize"
+      - label: "Re-auditar licenças"
+        command: "*discover-external-assets"
+        context: "license audit only (max 2 re-runs)"
+      - label: "Done"
+        command: null
+    output_hint: "External asset discovery completo. Score: {score}/100. Próximo passo?"
+
+  after_discover_token_drift:
+    trigger: "discover-token-drift completes"
+    options:
+      - label: "Re-extrair tokens desatualizados"
+        command: "*scrape"
+        context: "re-extract drifted sources"
+      - label: "Fundir tokens atualizados"
+        command: "*fuse"
+      - label: "Ignorar drift e documentar"
+        command: null
+      - label: "Done"
+        command: null
+    output_hint: "Token drift scan completo. {drift_count} tokens com drift. Próximo passo?"
+
+  after_scan:
+    trigger: "apex-scan completes"
+    options:
+      - label: "Rodar sweep visual"
+        command: "*apex-vision"
+      - label: "Rodar sweep de código"
+        command: "*apex-full"
+      - label: "Ver sugestões"
+        command: "*apex-suggest"
+      - label: "Done"
+        command: null
+    output_hint: "Scan completo. Profile: {profile}. Stack: {stack}. Próximo passo?"
+
+  after_step:
+    trigger: "apex-step completes a single phase"
+    options:
+      - label: "Continuar para próxima fase"
+        command: "*apex-step"
+        context: "next phase"
+      - label: "Revisar fase atual"
+        command: "*apex-review"
+      - label: "Pivotar abordagem"
+        command: "*apex-pivot"
+      - label: "Done"
+        command: null
+    output_hint: "Fase {phase_name} completa. {phases_remaining} fases restantes. Próximo passo?"
+
   # Chain behavior rules
   chain_rules:
     - "User picks by number (1, 2, 3) — execute immediately"
@@ -512,6 +1215,35 @@ intent_chaining:
     - "User says 'done', 'pronto', 'so isso' — end chain gracefully"
     - "Max chain depth: 5 operations (prevent infinite loops)"
     - "Each chain step shows suggestions, NEVER auto-executes"
+
+  # ============================================================================
+  # HANDOFF DEPTH TRACKING
+  # ============================================================================
+  # Prevents infinite agent delegation loops. Each handoff increments depth.
+  # At max depth, BLOCK further handoffs and escalate to apex-lead.
+  # ============================================================================
+  handoff_depth:
+    max_depth: 5
+    tracking:
+      field: "handoff_depth"
+      location: "In-memory counter, persisted in handoff artifact"
+      initial_value: 0
+      increment: "On every agent→agent delegation"
+    enforcement:
+      at_max_depth:
+        action: "BLOCK further handoffs"
+        message: "Max handoff depth ({max_depth}) reached. Escalating to apex-lead."
+        escalation: "apex-lead reviews chain, decides: (1) complete current work, (2) reset depth and continue, (3) abort chain"
+      warning_at: 4  # Warn at depth 4 that next handoff is the last
+      warning_message: "Handoff depth {current}/5 — next handoff will trigger escalation."
+    artifact_field:
+      description: "Add handoff_depth to every handoff artifact YAML"
+      schema: |
+        handoff:
+          from_agent: "{current}"
+          to_agent: "{next}"
+          handoff_depth: {N}  # Incremented from previous
+          # ... rest of artifact
 
 # ==============================================================================
 # 2. SMART DEFAULTS — Parar de perguntar o obvio
@@ -594,6 +1326,21 @@ smart_defaults:
           confidence: low
           show: null  # Analyze all dimensions equally
 
+    - question: "Header position?"
+      smart_default:
+        - if: "creating header component OR greenfield project"
+          answer: "position: sticky"
+          confidence: high
+          show: null
+        - if: "user says 'fixo', 'nao sumir', 'grudado', 'sempre visivel'"
+          answer: "position: sticky"
+          confidence: high
+          show: "Header sticky — fica visivel durante scroll."
+        - if: "user explicitly says 'nao fixo', 'some junto', 'scroll junto'"
+          answer: "position: relative (scrolls with page)"
+          confidence: high
+          show: "Header vai rolar junto com a pagina."
+
     - question: "Corrigir suggestion automaticamente?"
       smart_default:
         - if: "suggestion is LOW severity"
@@ -628,10 +1375,35 @@ context_memory:
       user_preferences: ".aios/apex-context/preferences.yaml"
     gitignore: true
 
+  # ============================================================================
+  # INVALIDATION DETECTION MECHANISM
+  # ============================================================================
+  # Caches are validated on ACCESS (lazy invalidation), not via file watchers.
+  # On each cache read, the agent checks the detection_mechanism conditions.
+  # If ANY condition is true, the cache is stale and a re-scan is triggered.
+  # ============================================================================
+  detection_mechanism:
+    type: "mtime-comparison"
+    description: >
+      On cache read, compare the cache's `discovered_at` timestamp against
+      the most recent mtime of files matching the invalidation glob patterns.
+      If any file has mtime > discovered_at, cache is STALE.
+    implementation: |
+      function isCacheStale(cache, globPatterns):
+        cacheTime = cache.discovered_at
+        for pattern in globPatterns:
+          files = glob(pattern)
+          latestMtime = max(file.mtime for file in files)
+          if latestMtime > cacheTime:
+            return true
+        return false
+    fallback: "If glob fails or returns empty, treat cache as stale (safe default)"
+
   cache_rules:
     scan_results:
       store: "Full project_context from apex-scan"
       ttl: "Current session"
+      invalidation_globs: ["package.json", "tailwind.config.*", "vite.config.*", "next.config.*"]
       invalidate_on:
         - "package.json modified"
         - "tailwind.config.* modified"
@@ -646,6 +1418,7 @@ context_memory:
         health_score: N
         discovered_at: "{ISO 8601}"
       ttl: "Until src/ files change (mtime-based)"
+      invalidation_globs: ["src/**/*.tsx", "src/**/*.jsx", "app/**/*.tsx", "app/**/*.jsx", "packages/**/src/**/*.tsx"]
       invalidate_on:
         - "Any .tsx/.jsx file created, deleted, or modified"
         - "User runs *discover-components explicitly"
@@ -658,6 +1431,7 @@ context_memory:
         token_inventory: "{colors, spacing, typography}"
         discovered_at: "{ISO 8601}"
       ttl: "Until CSS/config files change"
+      invalidation_globs: ["src/**/*.css", "src/**/*.css.ts", "tailwind.config.*", "src/**/theme.*", "packages/tokens/**"]
       invalidate_on:
         - "Any .css file modified"
         - "tailwind.config.* modified"
@@ -690,6 +1464,7 @@ context_memory:
         route_health: N
         discovered_at: "{ISO 8601}"
       ttl: "Until router config or pages directory changes"
+      invalidation_globs: ["src/App.tsx", "src/routes.*", "src/pages/**", "app/**/page.tsx", "app/**/layout.tsx"]
       invalidate_on:
         - "Router config file modified"
         - "Page component created or deleted"
@@ -705,6 +1480,7 @@ context_memory:
         dep_health: N
         discovered_at: "{ISO 8601}"
       ttl: "Until package.json or lock file changes"
+      invalidation_globs: ["package.json", "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lockb"]
       invalidate_on:
         - "package.json modified"
         - "Lock file modified"
@@ -720,6 +1496,7 @@ context_memory:
         motion_health: N
         discovered_at: "{ISO 8601}"
       ttl: "Until component or CSS files change"
+      invalidation_globs: ["src/**/*.tsx", "src/**/*.jsx", "src/**/*.css", "src/**/*.css.ts"]
       invalidate_on:
         - "Any .tsx/.jsx/.css file with animation patterns modified"
         - "User runs *discover-motion explicitly"
@@ -732,6 +1509,7 @@ context_memory:
         a11y_health: N
         discovered_at: "{ISO 8601}"
       ttl: "Until component files change"
+      invalidation_globs: ["src/**/*.tsx", "src/**/*.jsx", "app/**/*.tsx"]
       invalidate_on:
         - "Any .tsx/.jsx file modified"
         - "User runs *discover-a11y explicitly"
@@ -747,10 +1525,65 @@ context_memory:
         perf_health: N
         discovered_at: "{ISO 8601}"
       ttl: "Until src/ or config files change"
+      invalidation_globs: ["src/**/*.tsx", "src/**/*.jsx", "package.json", "vite.config.*", "next.config.*"]
       invalidate_on:
         - "Any .tsx/.jsx file modified"
         - "package.json or build config modified"
         - "User runs *discover-performance explicitly"
+
+    state_discovery:
+      store:
+        state_health: N
+        context_providers: N
+        prop_drilling_chains: N
+        context_no_slice: N
+        discovered_at: "{ISO 8601}"
+      ttl: "Until component files change"
+      invalidation_globs: ["src/**/*.tsx", "src/**/*.jsx", "package.json"]
+      invalidate_on:
+        - "Any .tsx/.jsx file modified"
+        - "package.json modified (state lib added/removed)"
+        - "User runs *discover-state explicitly"
+
+    types_discovery:
+      store:
+        type_health: N
+        any_count: N
+        ts_nocheck_count: N
+        type_coverage_percent: N
+        discovered_at: "{ISO 8601}"
+      ttl: "Until TypeScript files or config change"
+      invalidation_globs: ["src/**/*.ts", "src/**/*.tsx", "tsconfig.json"]
+      invalidate_on:
+        - "Any .ts/.tsx file modified"
+        - "tsconfig.json modified"
+        - "User runs *discover-types explicitly"
+
+    forms_discovery:
+      store:
+        form_health: N
+        total_forms: N
+        double_submit_risks: N
+        form_a11y_issues: N
+        discovered_at: "{ISO 8601}"
+      ttl: "Until component files change"
+      invalidation_globs: ["src/**/*.tsx", "src/**/*.jsx"]
+      invalidate_on:
+        - "Any .tsx/.jsx file modified"
+        - "User runs *discover-forms explicitly"
+
+    security_discovery:
+      store:
+        security_health: N
+        xss_vectors: N
+        exposed_secrets: N
+        discovered_at: "{ISO 8601}"
+      ttl: "Until source files or env change"
+      invalidation_globs: ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx", ".env*"]
+      invalidate_on:
+        - "Any source file modified"
+        - ".env files modified"
+        - "User runs *discover-security explicitly"
 
     user_preferences:
       store:
@@ -773,3 +1606,14 @@ context_memory:
   cleanup:
     manual: "*apex-scan (forces re-scan, clears caches)"
     auto: "Remove caches older than 7 days"
+    retention_enforcement:
+      trigger: "On session start (after resume check)"
+      rules:
+        - condition: "Cache file mtime > 7 days"
+          action: "Delete cache file silently"
+        - condition: "Discovery output count > retention limit (10 per type)"
+          action: "Delete oldest files beyond retention limit"
+        - condition: "Total cache directory size > 5MB"
+          action: "Delete oldest caches until under 5MB, warn user"
+      log: ".aios/apex-context/cleanup.log"
+      note: "Cleanup runs automatically — never blocks operations"

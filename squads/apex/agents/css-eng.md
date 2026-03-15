@@ -793,6 +793,22 @@ dependencies:
       path: "tasks/stacking-context-debug.md"
       description: "Debug stacking context issues"
 
+    - name: "container-queries-setup"
+      path: "tasks/container-queries-setup.md"
+      description: "Container Queries architecture for component-level responsive design"
+
+    - name: "cascade-layers-architecture"
+      path: "tasks/cascade-layers-architecture.md"
+      description: "CSS Cascade Layers (@layer) for predictable specificity"
+
+    - name: "defensive-css-patterns"
+      path: "tasks/defensive-css-patterns.md"
+      description: "Defensive CSS patterns preventing layout breakage"
+
+    - name: "css-custom-property-api"
+      path: "tasks/css-custom-property-api.md"
+      description: "CSS Custom Property API for typed, themed design tokens"
+
   checklists:
     - name: "css-review-checklist"
       path: "checklists/css-review-checklist.md"

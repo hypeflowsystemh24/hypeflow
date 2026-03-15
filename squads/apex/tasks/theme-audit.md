@@ -1,3 +1,5 @@
+> **DEPRECATED** — Scope absorbed into `token-architecture.md`. See `data/task-consolidation-map.yaml`.
+
 # Task: theme-audit
 
 ```yaml

@@ -2,7 +2,7 @@
 
 ```yaml
 id: apex-discover-design
-version: "1.0.0"
+version: "1.1.0"
 title: "Design System Discovery"
 description: >
   Scans the project codebase to map the REAL design system in use:
@@ -207,6 +207,7 @@ consistency:
 ```yaml
 report:
   design_system_score:
+    # **Score Formula SSoT:** `data/health-score-formulas.yaml#discover-design`. The inline formula below is kept for reference but the YAML file is authoritative.
     formula: >
       (color_adherence * 0.3) + (spacing_adherence * 0.25) +
       (typography_adherence * 0.2) + (radius_adherence * 0.1) +
@@ -333,14 +334,21 @@ feeds_into:
 veto_conditions:
   - id: VC-DISC-DS-001
     condition: "No CSS files, no Tailwind config, no theme files"
-    action: "WARN — no design system detected, report as adhoc"
+    action: WARN
+    severity: LOW
     blocking: false
-    fallback: "Report inline styles and className patterns as implicit tokens"
+    feeds_gate: null
+    available_check: "CSS files OR tailwind.config.* OR theme.ts exists"
+    on_unavailable: SKIP_WITH_WARNING
 
   - id: VC-DISC-DS-002
     condition: "Project uses CSS-in-JS exclusively (no CSS/Tailwind)"
-    action: "ADAPT — scan theme objects instead of CSS files"
+    action: ADAPT
+    severity: LOW
     blocking: false
+    feeds_gate: null
+    available_check: "styled-components OR emotion in package.json"
+    on_unavailable: SKIP_WITH_WARNING
 ```
 
 ---
@@ -354,4 +362,37 @@ veto_conditions:
 
 ---
 
-*Apex Squad — Design System Discovery Task v1.0.0*
+## Cache
+
+```yaml
+cache:
+  location: ".aios/apex-context/design-cache.yaml"
+  ttl: "Until CSS/config files change"
+  invalidate_on:
+    - "Any .css file modified"
+    - "tailwind.config.* modified"
+    - "Theme/token files modified"
+    - "User runs *discover-design explicitly"
+```
+
+---
+
+## Edge Cases
+
+```yaml
+edge_cases:
+  - condition: "Project uses CSS-in-JS exclusively"
+    action: "ADAPT — scan theme objects and styled-components instead of CSS files"
+  - condition: "No design system detected (all hardcoded values)"
+    action: "REPORT — classify as adhoc, list dominant patterns as implicit tokens"
+  - condition: "Multiple theme files (light/dark/brand)"
+    action: "ADAPT — scan each theme separately, compare token consistency"
+```
+
+---
+
+`schema_ref: data/discovery-output-schema.yaml`
+
+---
+
+*Apex Squad — Design System Discovery Task v1.1.0*

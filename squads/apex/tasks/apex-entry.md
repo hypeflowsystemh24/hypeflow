@@ -97,6 +97,8 @@ classification:
       ux: [flow, experience, redesign, layout, navigation, interaction, feedback, confirmation]
       visual_qa: [looks wrong, pixel, regression, different, broken, screenshot]
       visual_analyze: [print, screenshot, analisa, olha esse, quero assim, faz igual, compara, referencia, inspiracao]
+      i18n: [i18n, translation, translate, locale, localization, RTL, right-to-left, multi-language, pluralization, intl]
+      error_handling: [error boundary, crash, white screen, fallback, error page, error recovery, crash recovery]
 ```
 
 ### Step 3: Select Pipeline
@@ -184,6 +186,14 @@ Action: Add animated stats card to dashboard
 Estimated files: 3-5
 
 Proceed? (yes / adjust / use *apex-go instead)
+```
+
+**Timeout behavior:**
+```yaml
+confirmation_timeout:
+  reminder_after: 5min  # "Still waiting — proceed with the plan above?"
+  auto_cancel_after: 30min  # Cancel pipeline selection, return to idle
+  on_cancel: "Pipeline plan discarded. Type @apex again to restart."
 ```
 
 ### Step 5: Execute

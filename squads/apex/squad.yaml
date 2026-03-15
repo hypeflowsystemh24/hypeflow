@@ -1,12 +1,12 @@
 name: apex
-version: "1.1.0"
+version: "1.7.0"
 title: "Apex Squad — Frontend Ultra-Premium"
 description: >
-  Squad 100% frontend ultra-premium para Web, Mobile e Spatial.
-  14 agentes especializados + 1 orchestrator, cada um com DNA de
-  elite minds do frontend mundial. Cobre absolutamente tudo que
-  o usuario ve e toca: design system, componentes, animacoes,
-  3D/spatial, acessibilidade, performance, CSS, tipografia, cores, efeitos.
+  Ultra-premium frontend squad for Web, Mobile, and Spatial platforms.
+  15 specialized agents (including orchestrator), each carrying DNA from
+  elite frontend minds. Covers everything the user sees and touches:
+  design systems, components, animations, 3D/spatial, accessibility,
+  performance, CSS, typography, colors, and visual effects.
 author: "Synkra AIOS"
 slashPrefix: "apex"
 patternPrefix: "AX"
@@ -21,7 +21,7 @@ model: "hybrid-premium"  # Core Design Engineers + Deep Specialists
 tiers:
   orchestrator: apex-lead
   tier_1: [frontend-arch]
-  tier_2: [interaction-dsgn, design-sys-eng]
+  tier_2: [interaction-dsgn, design-sys-eng, web-intel]
   tier_3: [css-eng, react-eng, mobile-eng, cross-plat-eng, spatial-eng]
   tier_4: [motion-eng, a11y-eng, perf-eng]
   tier_5: [qa-visual, qa-xplatform]
@@ -112,7 +112,7 @@ tasks:
     description: "Design system discovery — tokens, violations, palette, consistency score"
   - id: apex-discover-routes
     path: tasks/apex-discover-routes.md
-    description: "Route discovery — inventory, orphan routes, SEO gaps, dead routes"
+    description: "Route discovery — inventory, orphan routes, SEO gaps, dead routes, technical SEO audit"
   - id: apex-discover-dependencies
     path: tasks/apex-discover-dependencies.md
     description: "Dependency health — outdated, vulnerable, heavy, duplicated, unused packages"
@@ -125,6 +125,18 @@ tasks:
   - id: apex-discover-performance
     path: tasks/apex-discover-performance.md
     description: "Performance discovery — lazy loading gaps, image audit, re-render risks, CWV"
+  - id: apex-discover-state
+    path: tasks/apex-discover-state.md
+    description: "State management discovery — context sprawl, prop drilling, re-render risks, unused state"
+  - id: apex-discover-types
+    path: tasks/apex-discover-types.md
+    description: "TypeScript coverage discovery — any usage, unsafe casts, ts-nocheck, untyped props"
+  - id: apex-discover-forms
+    path: tasks/apex-discover-forms.md
+    description: "Forms discovery — validation gaps, error states, double submit, form a11y"
+  - id: apex-discover-security
+    path: tasks/apex-discover-security.md
+    description: "Frontend security discovery — XSS vectors, exposed secrets, insecure storage"
   - id: apex-agents
     path: tasks/apex-agents.md
     description: "List active agents for current profile"
@@ -133,7 +145,7 @@ tasks:
     description: "Browse design presets catalog for inspiration"
   - id: apex-transform
     path: tasks/apex-transform.md
-    description: "Apply complete design style with single command (31 presets)"
+    description: "Apply complete design style with single command (52 presets)"
 
   # --- Visual Analysis Tasks ---
   - id: apex-visual-analyze
@@ -337,6 +349,33 @@ tasks:
     path: tasks/3d-performance-audit.md
     description: "Audit 3D scene performance"
 
+  # --- Knowledge Extraction Tasks (new in 1.3.0) ---
+  - id: apex-i18n-audit
+    path: tasks/apex-i18n-audit.md
+    description: "i18n readiness audit — hardcoded strings, RTL, text overflow, pluralization, locale detection"
+  - id: apex-error-boundary
+    path: tasks/apex-error-boundary.md
+    description: "Error boundary architecture — audit coverage, layered strategy, recovery patterns"
+
+  # --- Pipeline Control Tasks (new in 1.2.0) ---
+  - id: apex-rollback
+    path: tasks/apex-rollback.md
+    description: "Rollback pipeline to previous checkpoint, restoring code and state"
+  - id: apex-dry-run
+    path: tasks/apex-dry-run.md
+    description: "Preview full pipeline plan without executing (dry run / plan mode)"
+
+  # --- Asset & Icon System Tasks (new in 1.6.0) ---
+  - id: apex-asset-pipeline
+    path: tasks/apex-asset-pipeline.md
+    description: "Brand asset pipeline — logo/icon recreation (geometric, enhance, compose)"
+  - id: apex-icon-system
+    path: tasks/apex-icon-system.md
+    description: "Icon system design & management (audit, setup, create, migrate)"
+  - id: asset-craft-mode
+    path: tasks/asset-craft-mode.md
+    description: "Diana's asset craft mode — palette extraction, geometric marks, brand tokens"
+
   # --- QA Tasks (qa-visual, qa-xplatform) ---
   - id: visual-regression-setup
     path: tasks/visual-regression-setup.md
@@ -361,19 +400,86 @@ data:
   - data/platform-capabilities.yaml
   - data/apex-intelligence.yaml
   - data/design-presets.yaml
+  - data/design-presets-premium.yaml
+  - data/design-presets-bigtech.yaml
+  - data/asset-viability-matrix.yaml
+  - data/discovery-output-schema.yaml
+  - data/apex-kb.md
+  - data/tech-stack.md
+  - data/implicit-heuristics.yaml
+  - data/agent-blind-spots.yaml
+  - data/vocabulary-bridge.yaml
+  - data/health-score-formulas.yaml
+  - data/scan-score-suggest-framework.yaml
+  - data/veto-physics-framework.yaml
+  - data/triage-cascade-framework.yaml
+  - data/context-dna-framework.yaml
+  - data/task-consolidation-map.yaml
+  - data/structure-detection-patterns.yaml
+  - data/sweep-scoring-model.yaml
+  - data/apex-pro-spec.yaml
+  - data/agent-handoff-matrix.yaml
+  - data/heuristic-source-map.yaml
+
+checklists:
+  - checklists/a11y-review-checklist.md
+  - checklists/architecture-review.md
+  - checklists/component-maturation.md
+  - checklists/component-quality-checklist.md
+  - checklists/component-review-checklist.md
+  - checklists/cross-platform-checklist.md
+  - checklists/cross-platform-qa-checklist.md
+  - checklists/css-review-checklist.md
+  - checklists/cwv-checklist.md
+  - checklists/defensive-css-checklist.md
+  - checklists/device-test-checklist.md
+  - checklists/discovery-checklist.md
+  - checklists/ds-component-review.md
+  - checklists/edge-compatibility.md
+  - checklists/figma-sync-checklist.md
+  - checklists/interaction-a11y.md
+  - checklists/layout-review.md
+  - checklists/motion-review-checklist.md
+  - checklists/multi-mode-checklist.md
+  - checklists/perf-review-checklist.md
+  - checklists/responsive-checklist.md
+  - checklists/rn-performance-checklist.md
+  - checklists/rsc-compliance.md
+  - checklists/ship-readiness-checklist.md
+  - checklists/token-compliance.md
+  - checklists/visual-qa-checklist.md
+  - checklists/visual-review-checklist.md
+  - checklists/wcag-22-checklist.md
+  - checklists/brand-asset-standards.md
+  - checklists/visual-acceptance-rubric.md
+
+templates:
+  - templates/adr-tmpl.md
+  - templates/component-design-tmpl.md
+  - templates/component-ds-tmpl.md
+  - templates/container-query-tmpl.md
+  - templates/fluid-typography-tmpl.md
+  - templates/layout-strategy-tmpl.md
+  - templates/perf-budget-tmpl.md
+  - templates/pipeline-checkpoint-tmpl.md
+  - templates/storybook-story-tmpl.md
+  - templates/tech-eval-tmpl.md
+  - templates/theme-config-tmpl.md
+  - templates/token-audit-report-tmpl.md
+  - templates/token-spec-tmpl.md
 
 profiles:
   full:
-    agents: [apex-lead, frontend-arch, interaction-dsgn, design-sys-eng, css-eng, react-eng, mobile-eng, cross-plat-eng, spatial-eng, motion-eng, a11y-eng, perf-eng, qa-visual, qa-xplatform]
+    agents: [apex-lead, frontend-arch, interaction-dsgn, design-sys-eng, web-intel, css-eng, react-eng, mobile-eng, cross-plat-eng, spatial-eng, motion-eng, a11y-eng, perf-eng, qa-visual, qa-xplatform]
     description: "Monorepo cross-platform (Next.js + React Native + Spatial)"
     detect_when: "react-native OR expo in package.json"
   web-next:
-    agents: [apex-lead, frontend-arch, interaction-dsgn, design-sys-eng, css-eng, react-eng, motion-eng, a11y-eng, perf-eng, qa-visual]
+    agents: [apex-lead, frontend-arch, interaction-dsgn, design-sys-eng, web-intel, css-eng, react-eng, motion-eng, a11y-eng, perf-eng, qa-visual]
     description: "Next.js App Router projects"
     detect_when: "next in package.json"
   web-spa:
-    agents: [apex-lead, interaction-dsgn, css-eng, react-eng, motion-eng, a11y-eng, perf-eng, qa-visual]
-    description: "React + Vite SPA (e.g., ClinicOS)"
+    agents: [apex-lead, interaction-dsgn, web-intel, css-eng, react-eng, motion-eng, a11y-eng, perf-eng, qa-visual]
+    description: "React + Vite SPA (e.g., My App)"
     detect_when: "react AND vite in package.json, no next"
   minimal:
     agents: [apex-lead, css-eng, react-eng, a11y-eng]
@@ -390,10 +496,12 @@ commands:
     - "*apex-status — Show pipeline status"
     - "*apex-abort — Cancel pipeline"
     - "*apex-pivot {reason} — Change direction mid-pipeline"
+    - "*apex-rollback — Rollback to previous checkpoint (code + state)"
+    - "*apex-dry-run {desc} — Preview pipeline plan without executing"
   visual:
-    - "*apex-analyze {print} — Analise visual profunda (8 dimensoes, score, opcoes)"
-    - "*apex-compare — Comparacao lado a lado (2 prints, delta por dimensao)"
-    - "*apex-consistency — Auditoria de consistencia cross-page (3+ prints)"
+    - "*apex-analyze {print} — Deep visual analysis (8 dimensions, score, options)"
+    - "*apex-compare — Side-by-side comparison (2 prints, delta per dimension)"
+    - "*apex-consistency — Cross-page consistency audit (3+ prints)"
   quality:
     - "*apex-review — Multi-agent frontend code review (patterns, arch, perf, a11y)"
     - "*apex-dark-mode — Dark mode audit (tokens, contrast, hardcoded colors)"
@@ -401,6 +509,8 @@ commands:
     - "*apex-export-tokens {format} — Export tokens (Figma, Style Dictionary, CSS, Tailwind)"
     - "*apex-integration-test {flow} — Integration test setup for composite interactions"
     - "*apex-refactor {component} — Safe refactoring workflow (5 phases)"
+    - "*apex-i18n-audit — i18n readiness audit (strings, RTL, overflow, plurals)"
+    - "*apex-error-boundary — Error boundary architecture audit (4 layers)"
   discovery:
     - "*discover-components — Inventory all components, dependency tree, orphans, test gaps"
     - "*discover-design — Map design system: tokens, violations, palette, consistency"
@@ -409,8 +519,12 @@ commands:
     - "*discover-motion — Animation inventory, CSS→spring violations, reduced-motion gaps"
     - "*discover-a11y — Static accessibility scan, WCAG violations, keyboard traps"
     - "*discover-performance — Lazy loading gaps, image audit, re-render risks, CWV"
+    - "*discover-state — Context sprawl, prop drilling, re-render risks, unused state"
+    - "*discover-types — TypeScript coverage: any, unsafe casts, untyped props"
+    - "*discover-forms — Validation gaps, error states, double submit, form a11y"
+    - "*discover-security — XSS vectors, exposed secrets, insecure storage"
   style:
-    - "*apex-inspire — Browse 31 design presets (Apple, Google, Stripe, brutalist, etc.)"
+    - "*apex-inspire — Browse 52 design presets (Apple, Google, Stripe, Netflix, Montblanc, etc.)"
     - "*apex-transform --style {id} — Apply complete design style to project"
   autonomous:
     - "*apex-scan — Scan project (stack, structure, design patterns)"

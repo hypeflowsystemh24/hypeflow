@@ -2,7 +2,7 @@
 
 ```yaml
 id: apex-discover-routes
-version: "1.0.0"
+version: "1.1.0"
 title: "Apex Discover Routes"
 description: >
   Maps ALL routes/pages in the project. Detects orphan routes (no nav pointing),
@@ -31,9 +31,9 @@ Maps all routes in the project. Auto-detects routing strategy.
 
 ---
 
-## How It Works
+## Discovery Phases
 
-### Step 1: Detect Routing Strategy
+### Phase 1: Detect Routing Strategy
 
 ```yaml
 detection:
@@ -60,7 +60,7 @@ detection:
     entry_point: "{main router file}"
 ```
 
-### Step 2: Build Route Inventory
+### Phase 2: Build Route Inventory
 
 ```yaml
 inventory:
@@ -90,7 +90,7 @@ inventory:
     without_error_boundary: N
 ```
 
-### Step 3: Detect Issues
+### Phase 3: Detect Issues
 
 ```yaml
 issues:
@@ -111,13 +111,29 @@ issues:
     severity: MEDIUM
 
   seo_gaps:
-    description: "Pages missing essential meta tags"
+    description: "Pages missing essential meta tags and technical SEO elements"
     detection: "No <title>, <meta description>, or og:image in page or Head/Metadata"
     checks:
       - title: "Page has <title> or document.title or Metadata.title"
       - description: "Page has <meta name='description'>"
       - og_image: "Page has <meta property='og:image'>"
       - canonical: "Page has <link rel='canonical'>"
+      - structured_data: "Page has JSON-LD or microdata (Schema.org)"
+      - robots_meta: "Page has appropriate robots meta (index/noindex)"
+      - h1_present: "Page has exactly one <h1>"
+      - lang_attribute: "HTML has lang attribute matching content language"
+    severity: MEDIUM
+
+  technical_seo:
+    description: "Project-level technical SEO elements"
+    detection: "Check for robots.txt, sitemap.xml, and global SEO configuration"
+    checks:
+      - robots_txt: "public/robots.txt exists with valid directives"
+      - sitemap_xml: "public/sitemap.xml exists OR sitemap generation configured"
+      - og_defaults: "Default OG tags configured (site_name, type, locale)"
+      - twitter_card: "Twitter card meta tags configured"
+      - favicon: "Favicon and apple-touch-icon present"
+      - manifest: "Web app manifest (manifest.json) present"
     severity: MEDIUM
 
   missing_error_boundary:
@@ -136,7 +152,7 @@ issues:
     severity: CRITICAL
 ```
 
-### Step 4: Calculate Route Health Score
+### Phase 4: Calculate Route Health Score
 
 ```yaml
 health_score:
@@ -151,6 +167,12 @@ health_score:
     missing_loading_state: -3 each
     duplicate_path: -15 each
     not_lazy_loaded: -1 each (pages only)
+    missing_structured_data: -1 each
+    missing_h1: -2 each
+    missing_lang_attribute: -3 (project-level)
+    missing_robots_txt: -5 (project-level)
+    missing_sitemap: -3 (project-level)
+    missing_favicon: -2 (project-level)
 
   classification:
     90-100: "solid — routing well-structured"
@@ -159,7 +181,7 @@ health_score:
     0-49: "critical — routing infrastructure broken"
 ```
 
-### Step 5: Output
+### Phase 5: Output
 
 ```yaml
 output_format: |
@@ -193,16 +215,54 @@ output_format: |
 
 ---
 
+## Integration with Other Tasks
+
+```yaml
+feeds_into:
+  apex-suggest:
+    what: "Route issues become proactive suggestions"
+    how: "Orphan routes, SEO gaps flagged automatically"
+  apex-audit:
+    what: "Route health score feeds audit report"
+    how: "Route score becomes part of project readiness"
+  apex-scan:
+    what: "Route inventory enriches project context"
+    how: "Route map cached with scan results"
+  apex-fix:
+    what: "Fix knows route-component mapping"
+    how: "Route reference auto-resolves to component file"
+  discover-components:
+    what: "Component-route mapping"
+    how: "Components linked to routes for orphan detection"
+  frontend-arch:
+    what: "Arch receives complete route map"
+    how: "Architecture decisions use real route inventory"
+```
+
+---
+
 ## Veto Conditions
 
 ```yaml
 veto_conditions:
-  - id: VC-DR-001
+  - id: VC-DISC-ROUTE-001
     condition: "Dead route detected (component does not exist)"
-    action: "VETO — Dead routes cause runtime crashes. Fix or remove."
+    action: VETO
+    severity: HIGH
+    blocking: true
+    feeds_gate: null
     available_check: "manual"
     on_unavailable: MANUAL_CHECK
 ```
+
+---
+
+## Handoff
+
+| Field | Value |
+|-------|-------|
+| Delivers to | apex-lead (routing), frontend-arch (architecture decisions) |
+| Next action | User fixes issues or continues |
 
 ---
 
@@ -220,4 +280,22 @@ cache:
 
 ---
 
-*Apex Squad — Discover Routes Task v1.0.0*
+## Edge Cases
+
+```yaml
+edge_cases:
+  - condition: "No router detected (static site)"
+    action: "ADAPT — scan HTML files and link tags as routes"
+  - condition: "API-only project"
+    action: "BLOCK — no frontend routes to discover"
+  - condition: "i18n routing with locale prefixes"
+    action: "ADAPT — detect locale pattern, group routes by base path"
+```
+
+---
+
+`schema_ref: data/discovery-output-schema.yaml`
+
+---
+
+*Apex Squad — Discover Routes Task v1.1.0*

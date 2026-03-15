@@ -59,6 +59,8 @@ a single agent.
 | Performance | "performance", "slow", "LCP", "INP", "CLS", "bundle size", "Core Web Vitals", "loading time", "lighthouse", "profiling" | `@perf-eng` | T4 |
 | Visual QA | "visual regression", "pixel comparison", "screenshot test", "Chromatic", "design fidelity", "looks wrong visually" | `@qa-visual` | T5 |
 | Device / platform QA | "device test", "cross-browser", "iPhone", "Pixel", "real device", "Detox", "E2E mobile" | `@qa-xplatform` | T5 |
+| Internationalization | "i18n", "translation", "locale", "localization", "RTL", "right-to-left", "multi-language", "pluralization", "intl", "react-intl", "next-intl" | `@react-eng` + `@css-eng` (RTL) | T3 |
+| Error boundary | "error boundary", "white screen", "crash recovery", "error handling", "fallback UI", "error page" | `@react-eng` | T3 |
 | Visual Analysis | "analisa esse print", "screenshot", "olha esse app", "quero assim", "faz igual", image attached, "compara", "referencia", "inspiracao" | `@apex-lead` (orchestrates multi-agent analysis) | T0 |
 | Visual Compare | "compara com", "lado a lado", "antes e depois", 2 images attached | `@apex-lead` (orchestrates comparison) | T0 |
 | Consistency Audit | 3+ images attached, "consistencia", "todas as paginas", "cross-page" | `@apex-lead` (orchestrates consistency) | T0 |

@@ -1,3 +1,7 @@
+> **DEPRECATED** — Converted to checklist at `checklists/visual-regression-setup.md`. See `data/task-consolidation-map.yaml` for details.
+
+---
+
 # Task: visual-regression-setup
 
 ```yaml

@@ -2,7 +2,7 @@
 
 ```yaml
 id: apex-discover-components
-version: "1.0.0"
+version: "1.1.0"
 title: "Component Discovery"
 description: >
   Scans the project codebase to inventory ALL React components,
@@ -161,6 +161,7 @@ report:
     god_components: N
 
   health_score:
+    # **Score Formula SSoT:** `data/health-score-formulas.yaml#discover-components`. The inline formula below is kept for reference but the YAML file is authoritative.
     formula: >
       100 - (orphaned * 2) - (without_tests * 3) - (god_components * 5)
       - (circular_deps * 10) - (any_types * 1)
@@ -264,13 +265,21 @@ feeds_into:
 veto_conditions:
   - id: VC-DISC-COMP-001
     condition: "No React component files found in project"
-    action: "BLOCK — not a React project, discovery not applicable"
+    action: BLOCK
+    severity: HIGH
     blocking: true
+    feeds_gate: null
+    available_check: "glob src/**/*.tsx OR src/**/*.jsx returns results"
+    on_unavailable: BLOCK
 
   - id: VC-DISC-COMP-002
     condition: "Project has > 500 components"
-    action: "WARN — large project, discovery may take a moment"
+    action: WARN
+    severity: LOW
     blocking: false
+    feeds_gate: null
+    available_check: "glob src/**/*.tsx OR src/**/*.jsx returns results"
+    on_unavailable: SKIP_WITH_WARNING
 ```
 
 ---
@@ -284,4 +293,36 @@ veto_conditions:
 
 ---
 
-*Apex Squad — Component Discovery Task v1.0.0*
+## Cache
+
+```yaml
+cache:
+  location: ".aios/apex-context/component-cache.yaml"
+  ttl: "Until component files change"
+  invalidate_on:
+    - "Any .tsx/.jsx file created, deleted, or modified"
+    - "package.json modified (new dependencies)"
+    - "User runs *discover-components explicitly"
+```
+
+---
+
+## Edge Cases
+
+```yaml
+edge_cases:
+  - condition: "Monorepo with multiple packages"
+    action: "ADAPT — scan each packages/*/src/ independently, merge results"
+  - condition: "Zero components found in src/"
+    action: "ADAPT — check app/, components/, pages/ directories"
+  - condition: "Non-standard file locations"
+    action: "ADAPT — use glob **/*.tsx and filter by React imports"
+```
+
+---
+
+`schema_ref: data/discovery-output-schema.yaml`
+
+---
+
+*Apex Squad — Component Discovery Task v1.1.0*

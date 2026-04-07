@@ -171,7 +171,20 @@ function buildUTMUrl(tpl: UTMTemplate, baseUrl = 'https://landing.hypeflow.pt') 
 
 /* ─────────────────────── integration card ─────────────────────── */
 
-function IntegrationCard({ integration }: { integration: Integration }) {
+const OAUTH_URLS: Partial<Record<string, string>> = {
+  'meta':             '/api/oauth/meta/connect',
+  'instagram':        '/api/oauth/meta/connect',        // Meta covers Instagram
+  'google-ads':       '/api/oauth/google/connect?scope=ads',
+  'google-calendar':  '/api/oauth/google/connect?scope=calendar',
+  'tiktok':           '/api/oauth/tiktok/connect',
+  'linkedin':         '/api/oauth/linkedin/connect',
+}
+
+function IntegrationCard({ integration, onSync, onDisconnect }: {
+  integration: Integration
+  onSync: (id: string) => void
+  onDisconnect: (id: string) => void
+}) {
   const s = STATUS_CFG[integration.status]
   const connected = integration.status === 'connected'
   const hasError  = integration.status === 'error'
@@ -220,19 +233,37 @@ function IntegrationCard({ integration }: { integration: Integration }) {
       <div className="flex gap-2 mt-auto">
         {connected ? (
           <>
-            <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold tonal-hover transition-colors" style={{ background: 'var(--s3)', color: 'var(--t2)' }}>
+            <button
+              onClick={() => onSync(integration.id)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold tonal-hover transition-colors"
+              style={{ background: 'var(--s3)', color: 'var(--t2)' }}
+            >
               <RefreshCw size={11} /> Sincronizar
             </button>
-            <button className="flex items-center justify-center px-3 py-2 rounded-xl text-[10px] tonal-hover transition-colors" style={{ background: 'var(--s3)', color: 'var(--danger)' }}>
+            <button
+              onClick={() => onDisconnect(integration.id)}
+              title="Desconectar"
+              className="flex items-center justify-center px-3 py-2 rounded-xl text-[10px] tonal-hover transition-colors"
+              style={{ background: 'var(--s3)', color: 'var(--danger)' }}
+            >
               <X size={11} />
             </button>
           </>
         ) : hasError ? (
-          <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold transition-opacity hover:opacity-90" style={{ background: 'var(--danger)', color: '#fff' }}>
+          <button
+            onClick={() => { const url = OAUTH_URLS[integration.id]; if (url) window.location.href = url }}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold transition-opacity hover:opacity-90"
+            style={{ background: 'var(--danger)', color: '#fff' }}
+          >
             <RefreshCw size={11} /> Reconectar
           </button>
         ) : (
-          <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold transition-colors hover:opacity-90" style={{ background: 'var(--cyan)', color: '#0F1318' }}>
+          <button
+            onClick={() => { const url = OAUTH_URLS[integration.id]; if (url) window.location.href = url }}
+            disabled={!OAUTH_URLS[integration.id]}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold transition-colors hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ background: 'var(--cyan)', color: '#0F1318' }}
+          >
             <ExternalLink size={11} /> Conectar
           </button>
         )}
@@ -285,11 +316,35 @@ function PixelCard({ pixel, onCopy }: { pixel: Pixel; onCopy: (id: string) => vo
           <Copy size={11} /> Copiar ID
         </button>
         {pixel.status === 'active' ? (
-          <button className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold tonal-hover" style={{ background: 'var(--s3)', color: 'var(--success)' }}>
+          <button
+            onClick={() => {
+              // Send a test PageView event via server-side pixel route
+              fetch('/api/pixels/events', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${process.env.NEXT_PUBLIC_PIXEL_API_SECRET ?? 'test'}`,
+                },
+                body: JSON.stringify({
+                  event_name: 'PageView',
+                  client_id: 'test',
+                  user_data: { client_user_agent: navigator.userAgent },
+                  custom_data: { test: true },
+                }),
+              }).catch(() => {})
+              onCopy('test-sent')
+            }}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold tonal-hover"
+            style={{ background: 'var(--s3)', color: 'var(--success)' }}
+          >
             <Eye size={11} /> Testar
           </button>
         ) : (
-          <button className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold transition-opacity hover:opacity-90" style={{ background: 'var(--cyan)', color: '#0F1318' }}>
+          <button
+            onClick={() => alert('Para activar este pixel configure o ID nas definições de integração.')}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold transition-opacity hover:opacity-90"
+            style={{ background: 'var(--cyan)', color: '#0F1318' }}
+          >
             <Zap size={11} /> Activar
           </button>
         )}
@@ -549,6 +604,37 @@ export default function ConfigPage() {
   const [tab, setTab] = useState<ConfigTab>('integracoes')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [pixelCopied, setPixelCopied] = useState<string | null>(null)
+  const [syncingId, setSyncingId] = useState<string | null>(null)
+
+  const handleSync = (id: string) => {
+    setSyncingId(id)
+    // Trigger edge function sync for this integration
+    const funcMap: Record<string, string> = {
+      meta:            'sync-meta-ads',
+      instagram:       'sync-meta-ads',
+      'google-ads':    'sync-google-ads',
+      tiktok:          'sync-tiktok-ads',
+      linkedin:        'sync-linkedin-ads',
+    }
+    const fn = funcMap[id]
+    if (fn) {
+      fetch(`/api/integrations/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: id }),
+      }).catch(() => {})
+    }
+    setTimeout(() => setSyncingId(null), 2000)
+  }
+
+  const handleDisconnect = (id: string) => {
+    if (!confirm(`Desligar integração "${id}"? Os dados históricos são mantidos.`)) return
+    fetch('/api/integrations/disconnect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider: id }),
+    }).catch(() => {})
+  }
 
   const categories = ['all', 'ads', 'crm', 'automation', 'communication']
   const filteredIntegrations = INTEGRATIONS.filter(i => categoryFilter === 'all' || i.category === categoryFilter)
@@ -633,7 +719,14 @@ export default function ConfigPage() {
           <div className="flex gap-5 flex-1 min-h-0">
             <div className="flex-1 overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
-                {filteredIntegrations.map(i => <IntegrationCard key={i.id} integration={i} />)}
+                {filteredIntegrations.map(i => (
+                  <IntegrationCard
+                    key={i.id}
+                    integration={i}
+                    onSync={handleSync}
+                    onDisconnect={handleDisconnect}
+                  />
+                ))}
               </div>
             </div>
             <div className="w-72 flex-shrink-0 flex flex-col gap-4">

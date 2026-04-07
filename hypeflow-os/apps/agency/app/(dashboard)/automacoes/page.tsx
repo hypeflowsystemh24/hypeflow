@@ -164,7 +164,7 @@ const STATUS_MAP: Record<AutoStatus, { label: string; color: string; bg: string 
 const TRIGGER_OPTIONS: TriggerType[] = ['lead_created', 'stage_changed', 'score_threshold', 'time_delay', 'webhook', 'before_call', 'after_call', 'pipeline_updated']
 const ACTION_OPTIONS: ActionType[]   = ['send_whatsapp', 'send_email', 'platform_notification', 'move_stage', 'assign_agent', 'add_tag', 'notify_agent', 'trigger_n8n', 'trigger_make', 'trigger_manychat']
 
-function BuilderModal({ onClose }: { onClose: () => void }) {
+function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave?: (automation: Automation) => void }) {
   const [name, setName]       = useState('')
   const [trigger, setTrigger] = useState<TriggerType>('lead_created')
   const [actions, setActions] = useState<ActionType[]>(['send_whatsapp'])
@@ -260,7 +260,26 @@ function BuilderModal({ onClose }: { onClose: () => void }) {
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/5 text-sm text-[#7FA8C4] hover:border-white/10 transition-colors">
             Cancelar
           </button>
-          <button className="flex-1 py-2.5 rounded-xl bg-[#21A0C4] text-sm font-700 text-[#050D14] hover:bg-[#4FC8EA] transition-colors">
+          <button
+            disabled={!name.trim()}
+            onClick={() => {
+              const newAuto: Automation = {
+                id:          `a${Date.now()}`,
+                name:        name.trim(),
+                trigger,
+                conditions:  [],
+                actions:     actions.map((type, i) => ({ id: `ac${Date.now()}${i}`, type, params: {} })),
+                status:      'active',
+                runs_total:  0,
+                runs_today:  0,
+                last_run:    null,
+                created_at:  new Date().toISOString().slice(0, 10),
+              }
+              onSave?.(newAuto)
+              onClose()
+            }}
+            className="flex-1 py-2.5 rounded-xl bg-[#21A0C4] text-sm font-700 text-[#050D14] hover:bg-[#4FC8EA] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
             Criar Automação
           </button>
         </div>
@@ -328,7 +347,7 @@ function AutoCard({ auto, selected, onSelect }: {
 
 /* ─────────────────────── detail panel ─────────────────────── */
 
-function AutoDetailPanel({ auto, onClose }: { auto: Automation; onClose: () => void }) {
+function AutoDetailPanel({ auto, onClose, onEdit }: { auto: Automation; onClose: () => void; onEdit: () => void }) {
   const [status, setStatus] = useState(auto.status)
 
   return (
@@ -454,7 +473,10 @@ function AutoDetailPanel({ auto, onClose }: { auto: Automation; onClose: () => v
       </div>
 
       <div className="p-4 border-t border-white/5">
-        <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/5 text-xs font-700 text-[#7FA8C4] hover:border-[#21A0C4] hover:text-white transition-colors">
+        <button
+          onClick={onEdit}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/5 text-xs font-700 text-[#7FA8C4] hover:border-[#21A0C4] hover:text-white transition-colors"
+        >
           <Settings size={13} /> Editar Automação
         </button>
       </div>
@@ -468,18 +490,28 @@ export default function AutomacoesPage() {
   const [showBuilder, setShowBuilder]       = useState(false)
   const [selectedAuto, setSelectedAuto]     = useState<Automation | null>(null)
   const [statusFilter, setStatusFilter]     = useState<AutoStatus | 'all'>('all')
+  const [automations, setAutomations]       = useState<Automation[]>(MOCK_AUTOMATIONS)
 
-  const filtered = MOCK_AUTOMATIONS.filter(a =>
+  const filtered = automations.filter(a =>
     statusFilter === 'all' || a.status === statusFilter
   )
 
-  const totalRuns  = MOCK_AUTOMATIONS.reduce((s, a) => s + a.runs_today, 0)
-  const active     = MOCK_AUTOMATIONS.filter(a => a.status === 'active').length
+  const handleSaveAutomation = (automation: Automation) => {
+    setAutomations(prev => {
+      const exists = prev.find(a => a.id === automation.id)
+      return exists
+        ? prev.map(a => a.id === automation.id ? automation : a)
+        : [automation, ...prev]
+    })
+  }
+
+  const totalRuns  = automations.reduce((s, a) => s + a.runs_today, 0)
+  const active     = automations.filter(a => a.status === 'active').length
   const errorCount = MOCK_LOGS.filter(l => l.status === 'error').length
 
   return (
     <>
-      {showBuilder && <BuilderModal onClose={() => setShowBuilder(false)} />}
+      {showBuilder && <BuilderModal onClose={() => setShowBuilder(false)} onSave={handleSaveAutomation} />}
 
       <div className="flex h-full gap-0">
         {/* Main */}
@@ -503,7 +535,7 @@ export default function AutomacoesPage() {
             {[
               { label: 'Activas',     value: String(active),     color: '#1EC87A', icon: Play },
               { label: 'Runs hoje',   value: String(totalRuns),  color: '#21A0C4', icon: Activity },
-              { label: 'Total runs',  value: String(MOCK_AUTOMATIONS.reduce((s,a)=>s+a.runs_total,0)), color: '#F5A623', icon: Zap },
+              { label: 'Total runs',  value: String(automations.reduce((s,a)=>s+a.runs_total,0)), color: '#F5A623', icon: Zap },
               { label: 'Erros hoje',  value: String(errorCount), color: '#E84545', icon: AlertCircle },
             ].map(({ label, value, color, icon: Icon }) => (
               <div key={label} className="bg-[var(--s2)] border border-white/5 rounded-2xl p-4 flex items-center gap-4">
@@ -573,7 +605,11 @@ export default function AutomacoesPage() {
 
         {/* Detail panel */}
         {selectedAuto && (
-          <AutoDetailPanel auto={selectedAuto} onClose={() => setSelectedAuto(null)} />
+          <AutoDetailPanel
+            auto={selectedAuto}
+            onClose={() => setSelectedAuto(null)}
+            onEdit={() => { setSelectedAuto(null); setShowBuilder(true) }}
+          />
         )}
       </div>
     </>

@@ -26,6 +26,8 @@ interface Client {
   since: string
   manager: string
   channels: string[]
+  phone?: string
+  email?: string
 }
 
 interface PipelineLead {
@@ -502,20 +504,34 @@ function ClientPanel({ client, onClose }: { client: Client; onClose: () => void 
 
       {/* Actions */}
       <div className="p-4 grid grid-cols-3 gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        {[
-          { icon: ExternalLink, label: 'Portal',    color: 'var(--cyan)' },
-          { icon: Phone,        label: 'Ligar',     color: 'var(--success)' },
-          { icon: MessageSquare,label: 'WhatsApp',  color: '#25D366' },
-        ].map(({ icon: Icon, label, color }) => (
-          <button
-            key={label}
-            className="flex flex-col items-center gap-1.5 p-3 rounded-xl tonal-hover transition-all"
-            style={{ background: 'var(--s2)' }}
-          >
-            <Icon size={15} style={{ color }} />
-            <span className="text-[9px] font-semibold" style={{ color: 'var(--t3)' }}>{label}</span>
-          </button>
-        ))}
+        <button
+          onClick={() => window.open(`/portal?client=${client.id}`, '_blank')}
+          className="flex flex-col items-center gap-1.5 p-3 rounded-xl tonal-hover transition-all"
+          style={{ background: 'var(--s2)' }}
+        >
+          <ExternalLink size={15} style={{ color: 'var(--cyan)' }} />
+          <span className="text-[9px] font-semibold" style={{ color: 'var(--t3)' }}>Portal</span>
+        </button>
+        <a
+          href={client.phone ? `tel:${client.phone}` : undefined}
+          onClick={!client.phone ? (e) => e.preventDefault() : undefined}
+          className="flex flex-col items-center gap-1.5 p-3 rounded-xl tonal-hover transition-all"
+          style={{ background: 'var(--s2)', opacity: client.phone ? 1 : 0.4, cursor: client.phone ? 'pointer' : 'default' }}
+        >
+          <Phone size={15} style={{ color: 'var(--success)' }} />
+          <span className="text-[9px] font-semibold" style={{ color: 'var(--t3)' }}>Ligar</span>
+        </a>
+        <a
+          href={client.phone ? `https://wa.me/${client.phone.replace(/\D/g, '')}` : undefined}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={!client.phone ? (e) => e.preventDefault() : undefined}
+          className="flex flex-col items-center gap-1.5 p-3 rounded-xl tonal-hover transition-all"
+          style={{ background: 'var(--s2)', opacity: client.phone ? 1 : 0.4, cursor: client.phone ? 'pointer' : 'default' }}
+        >
+          <MessageSquare size={15} style={{ color: '#25D366' }} />
+          <span className="text-[9px] font-semibold" style={{ color: 'var(--t3)' }}>WhatsApp</span>
+        </a>
       </div>
     </div>
   )
@@ -573,7 +589,10 @@ export default function ClientesPage() {
               >
                 <Download size={13} /> Exportar CSV
               </button>
-              <button className="btn-lime flex items-center gap-2 px-5 py-2.5 text-sm rounded-xl">
+              <button
+                onClick={() => setShowImport(true)}
+                className="btn-lime flex items-center gap-2 px-5 py-2.5 text-sm rounded-xl"
+              >
                 <Plus size={14} /> Novo Cliente
               </button>
             </div>

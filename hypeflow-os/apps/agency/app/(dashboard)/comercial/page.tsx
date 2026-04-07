@@ -340,7 +340,10 @@ export default function ComercialPage() {
             >
               <Download size={13} /> Exportar CSV
             </button>
-            <button className="btn-lime flex items-center gap-2 px-5 py-2.5 text-sm rounded-xl">
+            <button
+              onClick={() => setShowImport(true)}
+              className="btn-lime flex items-center gap-2 px-5 py-2.5 text-sm rounded-xl"
+            >
               <Plus size={14} /> Nova Lead
             </button>
           </div>

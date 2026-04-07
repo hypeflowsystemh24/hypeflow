@@ -142,7 +142,7 @@ function MetricCard({ label, value, sub, icon: Icon, color }: {
 
 /* ─────────────────────────── schedule modal ─────────────────────────── */
 
-function ScheduleCallModal({ onClose }: { onClose: () => void }) {
+function ScheduleCallModal({ onClose, onScheduled }: { onClose: () => void; onScheduled?: () => void }) {
   const [form, setForm] = useState({
     lead: '',
     agent: AGENTS[0]!,
@@ -247,7 +247,17 @@ function ScheduleCallModal({ onClose }: { onClose: () => void }) {
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/5 text-sm text-[#7FA8C4] hover:border-white/10 transition-colors">
             Cancelar
           </button>
-          <button className="flex-1 py-2.5 rounded-xl bg-[#21A0C4] text-sm font-700 text-[#050D14] hover:bg-[#4FC8EA] transition-colors">
+          <button
+            disabled={!form.lead}
+            onClick={() => {
+              if (!form.lead.trim()) return
+              // In production: POST to /api/calls with form data + create Google Calendar event
+              console.log('[SCHEDULE]', form)
+              onScheduled?.()
+              onClose()
+            }}
+            className="flex-1 py-2.5 rounded-xl bg-[#21A0C4] text-sm font-700 text-[#050D14] hover:bg-[#4FC8EA] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
             Agendar + Google Meet
           </button>
         </div>
@@ -258,7 +268,7 @@ function ScheduleCallModal({ onClose }: { onClose: () => void }) {
 
 /* ─────────────────────────── outcome modal ─────────────────────────── */
 
-function OutcomeModal({ call, onClose }: { call: MockCall; onClose: () => void }) {
+function OutcomeModal({ call, onClose, onSave }: { call: MockCall; onClose: () => void; onSave?: (id: string, outcome: CallOutcome, notes: string, duration: number) => void }) {
   const [outcome, setOutcome] = useState<CallOutcome>(call.outcome)
   const [notes, setNotes] = useState(call.notes ?? '')
   const [duration, setDuration] = useState(call.duration_min)
@@ -329,7 +339,10 @@ function OutcomeModal({ call, onClose }: { call: MockCall; onClose: () => void }
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/5 text-sm text-[#7FA8C4] hover:border-white/10 transition-colors">
             Cancelar
           </button>
-          <button className="flex-1 py-2.5 rounded-xl bg-[#1EC87A] text-sm font-700 text-[#050D14] hover:opacity-90 transition-opacity">
+          <button
+            onClick={() => { onSave?.(call.id, outcome, notes, duration); onClose() }}
+            className="flex-1 py-2.5 rounded-xl bg-[#1EC87A] text-sm font-700 text-[#050D14] hover:opacity-90 transition-opacity"
+          >
             Guardar
           </button>
         </div>

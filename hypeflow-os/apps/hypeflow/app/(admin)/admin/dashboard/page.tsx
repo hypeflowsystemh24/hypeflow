@@ -64,6 +64,15 @@ const MOCK_REV_DATA = [
   { m: 'Abr', v: 28600 }, { m: 'Mai', v: 31200 }, { m: 'Jun', v: 26800 },
 ]
 
+const MOCK_FUNNEL = [
+  { stage: 'Leads Captadas',   count: 247, pct: 100, color: '#21A0C4' },
+  { stage: 'Primeiro Contacto',count: 189, pct: 76.5, color: '#4FC8EA' },
+  { stage: 'Qualificadas',     count: 124, pct: 50.2, color: '#F5A623' },
+  { stage: 'Call Agendada',    count: 78,  pct: 31.6, color: '#9B59B6' },
+  { stage: 'Proposta Enviada', count: 42,  pct: 17.0, color: '#D1FF00' },
+  { stage: 'Fechadas (Won)',   count: 19,  pct: 7.7,  color: '#00E5A0' },
+]
+
 const tempColor: Record<string, string> = { cold: '#4A6680', warm: '#F5A623', hot: '#E84545' }
 const tempLabel: Record<string, string> = { cold: 'COLD', warm: 'WARM', hot: 'HOT' }
 const sevColor: Record<string, string>  = { high: '#E84545', medium: '#F5A623', info: '#21A0C4' }
@@ -486,6 +495,88 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* ── Funnel Conversion Report ── */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="text-base font-semibold" style={{ color: 'var(--t1)' }}>Funil de Conversão</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--t3)' }}>Últimos 30 dias · {MOCK_FUNNEL[0]?.count} leads captadas</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold px-3 py-1.5 rounded-xl" style={{ background: 'rgba(0,229,160,0.1)', color: '#00E5A0' }}>
+              Taxa final: {MOCK_FUNNEL[MOCK_FUNNEL.length - 1]?.pct}%
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-end gap-1 h-40 mb-3">
+          {MOCK_FUNNEL.map((stage, i) => {
+            const barH = (stage.pct / 100) * 100
+            const convRate = i > 0
+              ? ((stage.count / (MOCK_FUNNEL[i - 1]?.count ?? 1)) * 100).toFixed(0)
+              : '100'
+            return (
+              <div key={stage.stage} className="flex-1 flex flex-col items-center gap-1 group relative">
+                {/* Tooltip */}
+                <div
+                  className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2.5 py-1.5 rounded-xl text-center z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ background: 'var(--s3)', border: '1px solid rgba(255,255,255,0.1)', minWidth: 100 }}
+                >
+                  <p className="text-xs font-bold" style={{ color: stage.color }}>{stage.count}</p>
+                  <p className="text-[10px]" style={{ color: 'var(--t3)' }}>{stage.stage}</p>
+                  {i > 0 && <p className="text-[10px]" style={{ color: '#F5A623' }}>Conv: {convRate}%</p>}
+                </div>
+
+                {/* Bar */}
+                <div
+                  className="w-full rounded-t-lg transition-all duration-500"
+                  style={{ height: `${barH}%`, background: `linear-gradient(180deg, ${stage.color}, ${stage.color}88)`, minHeight: 4 }}
+                />
+                {/* Drop-off arrow between stages */}
+                {i < MOCK_FUNNEL.length - 1 && (
+                  <div
+                    className="absolute right-0 top-1/3 w-px opacity-20"
+                    style={{ height: '50%', background: 'rgba(255,255,255,0.3)' }}
+                  />
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Stage labels */}
+        <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${MOCK_FUNNEL.length}, 1fr)` }}>
+          {MOCK_FUNNEL.map((stage, i) => {
+            const convRate = i > 0
+              ? ((stage.count / (MOCK_FUNNEL[i - 1]?.count ?? 1)) * 100).toFixed(0)
+              : null
+            return (
+              <div key={stage.stage} className="flex flex-col items-center gap-0.5 text-center">
+                <span className="text-[10px] font-bold" style={{ color: stage.color }}>{stage.count}</span>
+                <span className="text-[9px] leading-tight" style={{ color: 'var(--t3)' }}>{stage.stage.split(' ').slice(0, 2).join(' ')}</span>
+                {convRate && (
+                  <span className="text-[9px]" style={{ color: 'rgba(255,255,255,0.2)' }}>→{convRate}%</span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Conversion quality row */}
+        <div className="grid grid-cols-3 gap-3 mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          {[
+            { label: 'Lead→Qualificada', value: `${((MOCK_FUNNEL[2]?.count ?? 0) / (MOCK_FUNNEL[0]?.count ?? 1) * 100).toFixed(1)}%`, color: '#F5A623' },
+            { label: 'Qualificada→Call', value: `${((MOCK_FUNNEL[3]?.count ?? 0) / (MOCK_FUNNEL[2]?.count ?? 1) * 100).toFixed(1)}%`, color: '#9B59B6' },
+            { label: 'Call→Fechada',     value: `${((MOCK_FUNNEL[5]?.count ?? 0) / (MOCK_FUNNEL[3]?.count ?? 1) * 100).toFixed(1)}%`, color: '#00E5A0' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="text-center">
+              <p className="text-lg font-bold font-display" style={{ color }}>{value}</p>
+              <p className="text-[11px]" style={{ color: 'var(--t3)' }}>{label}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

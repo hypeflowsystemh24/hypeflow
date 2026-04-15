@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, Phone, Mail, MessageSquare, Calendar,
   Target, Activity, Clock, Tag, Edit2, Plus,
   ChevronDown, ChevronUp, Star, ExternalLink,
   Users, Zap, TrendingUp, FileText, BarChart2,
-  CheckCircle, XCircle, AlertCircle, X,
+  CheckCircle, XCircle, AlertCircle, X, RefreshCw,
 } from 'lucide-react'
+import { api } from '@/lib/trpc/client'
 
 /* ─── Types ─── */
 type Temp = 'hot' | 'warm' | 'cold'
@@ -234,12 +235,54 @@ export default function ContactProfilePage() {
   const [newNote, setNewNote] = useState('')
   const [showDealModal, setShowDealModal] = useState(false)
 
-  // Try to get from mock data — production would use tRPC
-  const contact = MOCK_CONTACTS[id]
+  // Try tRPC first (real UUIDs), fallback to mock for demo IDs
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  const leadQuery = api.admin.leads.getById.useQuery(
+    { id },
+    { enabled: isUUID, retry: false }
+  )
 
-  useEffect(() => {
-    // In production: fetch via api.admin.leads.getById.useQuery({ id })
-  }, [id])
+  // Merge real data over mock
+  const mockContact = MOCK_CONTACTS[id]
+  const realLead = leadQuery.data?.lead
+  const realInteractions = leadQuery.data?.interactions
+
+  const contact: Contact | undefined = realLead ? {
+    id: realLead.id,
+    full_name: realLead.full_name,
+    email: realLead.email ?? undefined,
+    phone: realLead.phone ?? undefined,
+    company: realLead.company ?? undefined,
+    score: realLead.score ?? 0,
+    temperature: (realLead.temperature as Temp) ?? 'cold',
+    stage: (realLead as { stage?: { name: string } }).stage?.name ?? '—',
+    source: realLead.source ?? 'organic',
+    assignee: (realLead as { agent?: { full_name: string } }).agent?.full_name ?? '—',
+    tags: (realLead.tags as string[] | null) ?? [],
+    created_at: realLead.created_at,
+    last_contact_at: realLead.last_contact_at ?? undefined,
+    notes: realLead.notes ?? undefined,
+  } : mockContact
+
+  const interactions: Interaction[] = realInteractions
+    ? realInteractions.map(i => ({
+        id: i.id,
+        type: i.type as Interaction['type'],
+        content: i.content ?? '',
+        outcome: i.outcome ?? undefined,
+        created_at: i.created_at,
+        user: (i as { user?: { full_name: string } }).user ?? undefined,
+      }))
+    : MOCK_INTERACTIONS
+
+  if (leadQuery.isLoading && isUUID) {
+    return (
+      <div className="flex items-center justify-center h-64 gap-3" style={{ color: 'var(--t3)' }}>
+        <RefreshCw size={18} className="animate-spin" />
+        <span className="text-sm">Carregando perfil...</span>
+      </div>
+    )
+  }
 
   if (!contact) {
     return (
@@ -464,8 +507,8 @@ export default function ContactProfilePage() {
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-4">
                   {[
-                    { label: 'Interacções', value: MOCK_INTERACTIONS.length, color: 'var(--cyan)', icon: Activity },
-                    { label: 'Calls', value: MOCK_INTERACTIONS.filter(i => i.type === 'call').length, color: '#D1FF00', icon: Phone },
+                    { label: 'Interacções', value: interactions.length, color: 'var(--cyan)', icon: Activity },
+                    { label: 'Calls', value: interactions.filter(i => i.type === 'call').length, color: '#D1FF00', icon: Phone },
                     { label: 'Deals', value: MOCK_DEALS.length, color: '#00E5A0', icon: TrendingUp },
                   ].map(({ label, value, color, icon: Icon }) => (
                     <div key={label} className="card p-4 flex items-center gap-3">
@@ -484,7 +527,7 @@ export default function ContactProfilePage() {
                 <div className="card p-5">
                   <p className="text-sm font-semibold mb-4" style={{ color: 'var(--t1)' }}>Timeline de Actividade</p>
                   <div className="flex flex-col">
-                    {MOCK_INTERACTIONS.map(item => (
+                    {interactions.map(item => (
                       <TimelineItem key={item.id} item={item} />
                     ))}
                   </div>
@@ -498,7 +541,7 @@ export default function ContactProfilePage() {
                 <div className="card p-5">
                   <p className="text-sm" style={{ color: 'var(--t3)' }}>Conversas integradas via GHL — próximamente disponível.</p>
                   <div className="flex flex-col gap-3 mt-4">
-                    {MOCK_INTERACTIONS.filter(i => ['whatsapp', 'email'].includes(i.type)).map(item => (
+                    {interactions.filter(i => ['whatsapp', 'email'].includes(i.type)).map(item => (
                       <TimelineItem key={item.id} item={item} />
                     ))}
                   </div>
@@ -519,10 +562,10 @@ export default function ContactProfilePage() {
                       <Plus size={13} /> Agendar Call
                     </button>
                   </div>
-                  {MOCK_INTERACTIONS.filter(i => i.type === 'call').map(item => (
+                  {interactions.filter(i => i.type === 'call').map(item => (
                     <TimelineItem key={item.id} item={item} />
                   ))}
-                  {MOCK_INTERACTIONS.filter(i => i.type === 'call').length === 0 && (
+                  {interactions.filter(i => i.type === 'call').length === 0 && (
                     <p className="text-sm text-center py-4" style={{ color: 'var(--t3)' }}>Nenhuma call registada</p>
                   )}
                 </div>
@@ -623,7 +666,7 @@ export default function ContactProfilePage() {
                     </button>
                   </div>
                 </div>
-                {MOCK_INTERACTIONS.filter(i => i.type === 'note').map(item => (
+                {interactions.filter(i => i.type === 'note').map(item => (
                   <div key={item.id} className="card px-4 py-3">
                     <p className="text-sm" style={{ color: 'var(--t1)' }}>{item.content}</p>
                     <div className="flex items-center justify-between mt-2">

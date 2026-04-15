@@ -5,7 +5,7 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
-import { TrendingUp, TrendingDown, Download, Euro, Users, MousePointer } from 'lucide-react'
+import { TrendingUp, TrendingDown, Download, Euro, Users, MousePointer, Target, Award, ChevronRight } from 'lucide-react'
 import { PlatformIcon } from '@/components/icons/PlatformIcons'
 import { api } from '@/lib/trpc/client'
 
@@ -43,6 +43,22 @@ const CHANNEL_ICON: Record<string, string> = {
 }
 
 const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+
+/* Attribution model mock — per-channel ROAS + funnel conversion */
+type AttributionModel = 'last_click' | 'first_click' | 'linear'
+
+const ATTRIBUTION_MOCK: Record<string, {
+  roas: Record<AttributionModel, number>
+  funnel: { leads: number; qualified: number; call: number; closed: number }
+  revenue: number
+}> = {
+  meta:       { roas: { last_click: 4.2, first_click: 3.1, linear: 3.7 }, funnel: { leads: 48, qualified: 31, call: 18, closed: 9  }, revenue: 22500 },
+  instagram:  { roas: { last_click: 3.1, first_click: 3.8, linear: 3.4 }, funnel: { leads: 22, qualified: 13, call: 7,  closed: 3  }, revenue: 7500  },
+  google_ads: { roas: { last_click: 5.8, first_click: 5.2, linear: 5.5 }, funnel: { leads: 27, qualified: 21, call: 14, closed: 8  }, revenue: 28000 },
+  linkedin:   { roas: { last_click: 2.4, first_click: 2.9, linear: 2.6 }, funnel: { leads: 8,  qualified: 7,  call: 5,  closed: 2  }, revenue: 9000  },
+  tiktok:     { roas: { last_click: 2.1, first_click: 1.8, linear: 2.0 }, funnel: { leads: 19, qualified: 8,  call: 3,  closed: 1  }, revenue: 2500  },
+  organic:    { roas: { last_click: 8.0, first_click: 8.0, linear: 8.0 }, funnel: { leads: 12, qualified: 9,  call: 6,  closed: 4  }, revenue: 12000 },
+}
 
 /* ──────────────────────── MOCK DATA ──────────────────────── */
 
@@ -202,6 +218,7 @@ export function TrafficDashboardClient({ clients, demoMode = false }: Props) {
   const [selectedClientId, setSelectedClientId] = useState(clients[0]?.id ?? '')
   const [days, setDays] = useState<'7' | '30' | '90'>('30')
   const [activeChannels, setActiveChannels] = useState<Set<string>>(new Set())
+  const [attributionModel, setAttributionModel] = useState<AttributionModel>('last_click')
 
   const dashboardQuery = api.admin.trafego.getDashboard.useQuery(
     { clientId: selectedClientId, days, sourceType: 'paid' },
@@ -578,6 +595,145 @@ export function TrafficDashboardClient({ clients, demoMode = false }: Props) {
           Melhor dia: <span className="text-[#21A0C4] font-700">{weekday.find(d => d.leads === Math.max(...weekday.map(x => x.leads)))?.label}</span>
           {' '}· CPL médio nesse dia: <span className="text-[#1EC87A] font-700">€{cpl.toFixed(2)}</span>
         </p>
+      </div>
+
+      {/* ── CONVERSION ATTRIBUTION ── */}
+      <div className="bg-[var(--s2)] border border-white/5 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(209,255,0,0.1)' }}>
+              <Target size={14} style={{ color: '#D1FF00' }} />
+            </div>
+            <p className="text-sm font-display font-800 text-white">Atribuição de Conversão</p>
+          </div>
+          <div className="flex bg-[var(--s1)] rounded-xl overflow-hidden">
+            {([
+              { id: 'last_click',  label: 'Último clique' },
+              { id: 'first_click', label: 'Primeiro clique' },
+              { id: 'linear',      label: 'Linear' },
+            ] as const).map(({ id, label }) => (
+              <button key={id} onClick={() => setAttributionModel(id)}
+                className="px-3 py-1.5 text-[10px] font-bold transition-all"
+                style={{
+                  background: attributionModel === id ? 'var(--s3)' : 'transparent',
+                  color: attributionModel === id ? 'var(--t1)' : 'var(--t3)',
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ROAS per channel */}
+        <div className="grid grid-cols-3 gap-3 mb-5">
+          {channels.filter(ch => ATTRIBUTION_MOCK[ch.key]).map(ch => {
+            const attr = ATTRIBUTION_MOCK[ch.key]!
+            const roas = attr.roas[attributionModel]
+            const isTop = roas === Math.max(...channels.filter(c => ATTRIBUTION_MOCK[c.key]).map(c => ATTRIBUTION_MOCK[c.key]!.roas[attributionModel]))
+            return (
+              <div key={ch.key} className="rounded-xl p-3 flex flex-col gap-2"
+                style={{
+                  background: isTop ? 'rgba(209,255,0,0.06)' : 'var(--s1)',
+                  border: isTop ? '1px solid rgba(209,255,0,0.2)' : '1px solid transparent',
+                }}>
+                <div className="flex items-center justify-between">
+                  <PlatformIcon platform={CHANNEL_ICON[ch.key] ?? ch.key} size={20} />
+                  {isTop && <Award size={11} style={{ color: '#D1FF00' }} />}
+                </div>
+                <div>
+                  <p className="text-base font-bold leading-none" style={{ color: isTop ? '#D1FF00' : 'var(--t1)' }}>
+                    {roas.toFixed(1)}×
+                  </p>
+                  <p className="text-[9px] mt-0.5" style={{ color: 'var(--t3)' }}>ROAS</p>
+                </div>
+                <p className="text-[10px]" style={{ color: 'var(--t3)' }}>
+                  €{attr.revenue.toLocaleString('pt-PT')} receita
+                </p>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Revenue share bar */}
+        <div className="mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--t3)' }}>Quota de receita atribuída</p>
+          <div className="flex h-6 rounded-xl overflow-hidden gap-px">
+            {(() => {
+              const total = channels.filter(ch => ATTRIBUTION_MOCK[ch.key]).reduce((s, ch) => s + ATTRIBUTION_MOCK[ch.key]!.revenue, 0)
+              return channels.filter(ch => ATTRIBUTION_MOCK[ch.key]).map(ch => {
+                const pct = (ATTRIBUTION_MOCK[ch.key]!.revenue / total) * 100
+                return (
+                  <div key={ch.key} title={`${CHANNEL_LABELS[ch.key]}: ${pct.toFixed(1)}%`}
+                    style={{ width: `${pct}%`, background: CHANNEL_COLORS[ch.key] ?? '#21A0C4', minWidth: pct > 2 ? undefined : 2 }}
+                  />
+                )
+              })
+            })()}
+          </div>
+          <div className="flex flex-wrap gap-3 mt-2">
+            {channels.filter(ch => ATTRIBUTION_MOCK[ch.key]).map(ch => {
+              const total = channels.filter(c => ATTRIBUTION_MOCK[c.key]).reduce((s, c) => s + ATTRIBUTION_MOCK[c.key]!.revenue, 0)
+              const pct = (ATTRIBUTION_MOCK[ch.key]!.revenue / total) * 100
+              return (
+                <span key={ch.key} className="flex items-center gap-1.5 text-[10px]" style={{ color: 'var(--t3)' }}>
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CHANNEL_COLORS[ch.key] }} />
+                  {CHANNEL_LABELS[ch.key]} {pct.toFixed(0)}%
+                </span>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── CONVERSION FUNNEL ── */}
+      <div className="bg-[var(--s2)] border border-white/5 rounded-2xl p-5">
+        <p className="text-sm font-display font-800 text-white mb-4">Funil de Conversão por Canal</p>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-white/5">
+                {['Canal', 'Leads', 'Qualificadas', 'Calls', 'Fechadas', 'Conv. Lead→Fecho'].map(h => (
+                  <th key={h} className="text-left label-system px-3 py-2.5 whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {channels.filter(ch => ATTRIBUTION_MOCK[ch.key]).map(ch => {
+                const f = ATTRIBUTION_MOCK[ch.key]!.funnel
+                const convRate = f.leads > 0 ? ((f.closed / f.leads) * 100).toFixed(1) : '0'
+                const FUNNEL_STEPS = [f.leads, f.qualified, f.call, f.closed]
+                return (
+                  <tr key={ch.key} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <PlatformIcon platform={CHANNEL_ICON[ch.key] ?? ch.key} size={20} />
+                        <span className="text-sm font-700 text-white">{CHANNEL_LABELS[ch.key]}</span>
+                      </div>
+                    </td>
+                    {FUNNEL_STEPS.map((v, i) => (
+                      <td key={i} className="px-3 py-3">
+                        <div className="flex items-center gap-1.5">
+                          {i > 0 && <ChevronRight size={9} style={{ color: 'var(--t3)' }} />}
+                          <span className="text-sm font-700" style={{ color: CHANNEL_COLORS[ch.key] }}>{v}</span>
+                          {i > 0 && (
+                            <span className="text-[9px]" style={{ color: 'var(--t3)' }}>
+                              ({((v / FUNNEL_STEPS[i - 1]!) * 100).toFixed(0)}%)
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    ))}
+                    <td className="px-3 py-3">
+                      <span className="text-sm font-bold" style={{ color: Number(convRate) >= 15 ? '#1EC87A' : Number(convRate) >= 8 ? '#F5A623' : 'var(--t3)' }}>
+                        {convRate}%
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )

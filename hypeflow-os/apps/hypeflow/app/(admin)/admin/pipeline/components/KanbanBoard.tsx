@@ -452,7 +452,9 @@ export function KanbanBoard({ agencyId, demoMode = false, initialHotFilter = fal
                 stage={stage}
                 leads={stage.leads}
                 activeId={activeId}
+                allStages={focusStages}
                 onAdvanceLead={handleAdvanceLead}
+                onQuickMove={(leadId, stageId) => void moveLeadToStage(leadId, stageId)}
                 onCardClick={handleCardClick}
               />
             ))}

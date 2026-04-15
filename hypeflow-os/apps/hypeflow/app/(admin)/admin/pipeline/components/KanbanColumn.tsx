@@ -10,11 +10,13 @@ interface KanbanColumnProps {
   stage: PipelineStage
   leads: Lead[]
   activeId: string | null
+  allStages?: PipelineStage[]
   onAdvanceLead?: (leadId: string) => void
+  onQuickMove?: (leadId: string, stageId: string) => void
   onCardClick?: (lead: Lead) => void
 }
 
-export function KanbanColumn({ stage, leads, activeId, onAdvanceLead, onCardClick }: KanbanColumnProps) {
+export function KanbanColumn({ stage, leads, activeId, allStages, onAdvanceLead, onQuickMove, onCardClick }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id })
 
   const dealValue = leads.reduce((acc, l) => {
@@ -100,8 +102,10 @@ export function KanbanColumn({ stage, leads, activeId, onAdvanceLead, onCardClic
                 key={lead.id}
                 lead={lead}
                 stage={stage}
+                allStages={allStages}
                 isDragging={activeId === lead.id}
                 onAdvance={onAdvanceLead}
+                onQuickMove={onQuickMove}
                 onClick={onCardClick}
               />
             ))}

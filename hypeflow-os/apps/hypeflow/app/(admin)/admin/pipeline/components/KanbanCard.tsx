@@ -3,7 +3,8 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { differenceInHours } from 'date-fns'
-import { Phone, Calendar, MessageSquare, ArrowRight, Mail } from 'lucide-react'
+import { Phone, Calendar, MessageSquare, ArrowRight, Mail, ChevronRight } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
 import type { Lead, PipelineStage } from '@/lib/types'
 
 const SOURCE_MAP: Record<string, { label: string; color: string }> = {
@@ -25,12 +26,27 @@ const TEMP_CONFIG: Record<string, { color: string; label: string }> = {
 interface KanbanCardProps {
   lead: Lead
   stage?: PipelineStage
+  allStages?: PipelineStage[]
   isDragging?: boolean
   onAdvance?: (leadId: string) => void
+  onQuickMove?: (leadId: string, stageId: string) => void
   onClick?: (lead: Lead) => void
 }
 
-export function KanbanCard({ lead, stage, isDragging = false, onAdvance, onClick }: KanbanCardProps) {
+export function KanbanCard({ lead, stage, allStages = [], isDragging = false, onAdvance, onQuickMove, onClick }: KanbanCardProps) {
+  const [showStagePicker, setShowStagePicker] = useState(false)
+  const pickerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showStagePicker) return
+    function handleClick(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowStagePicker(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [showStagePicker])
   const { attributes, listeners, setNodeRef, transform, transition, isDragging: isSortableDragging } =
     useSortable({ id: lead.id })
 
@@ -188,6 +204,62 @@ export function KanbanCard({ lead, stage, isDragging = false, onAdvance, onClick
         >
           <ArrowRight size={11} />
         </button>
+
+        {/* Quick stage picker */}
+        {allStages.length > 0 && (
+          <div className="relative" ref={pickerRef}>
+            <button
+              title="Mover para etapa"
+              onPointerDown={e => e.stopPropagation()}
+              onClick={e => { e.stopPropagation(); setShowStagePicker(v => !v) }}
+              className="p-1.5 rounded-lg"
+              style={{
+                background: showStagePicker ? 'rgba(209,255,0,0.15)' : 'var(--s3)',
+                color: showStagePicker ? '#D1FF00' : 'var(--t3)',
+              }}
+            >
+              <ChevronRight size={11} />
+            </button>
+
+            {showStagePicker && (
+              <div
+                className="absolute bottom-full right-0 mb-1.5 rounded-xl overflow-hidden z-50 flex flex-col"
+                style={{
+                  background: 'var(--s2)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                  minWidth: 160,
+                }}
+                onPointerDown={e => e.stopPropagation()}
+              >
+                <p className="text-[9px] font-bold uppercase tracking-widest px-3 py-1.5" style={{ color: 'var(--t3)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  Mover para
+                </p>
+                {allStages.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={e => {
+                      e.stopPropagation()
+                      onQuickMove?.(lead.id, s.id)
+                      setShowStagePicker(false)
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 text-left w-full transition-colors"
+                    style={{
+                      background: s.id === stage?.id ? `${s.color}12` : 'transparent',
+                      color: s.id === stage?.id ? s.color : 'var(--t2)',
+                    }}
+                    onMouseEnter={e => { if (s.id !== stage?.id) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}
+                    onMouseLeave={e => { if (s.id !== stage?.id) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                  >
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                    <span className="text-xs truncate">{s.name}</span>
+                    {s.id === stage?.id && <span className="text-[9px] ml-auto" style={{ color: 'var(--t3)' }}>atual</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

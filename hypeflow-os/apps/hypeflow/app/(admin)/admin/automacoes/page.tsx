@@ -584,6 +584,149 @@ function AutoDetailPanel({ auto, onClose, onEdit }: { auto: Automation; onClose:
   )
 }
 
+/* ─────────────────────── templates gallery ─────────────────────── */
+
+interface AutoTemplate {
+  id: string
+  name: string
+  description: string
+  category: 'reactivation' | 'onboarding' | 'nurture' | 'closing'
+  steps: Array<{ icon: string; label: string; detail: string }>
+  highlight?: boolean
+}
+
+const CATEGORY_CFG: Record<AutoTemplate['category'], { label: string; color: string }> = {
+  reactivation: { label: 'Reactivação',  color: '#E84545' },
+  onboarding:   { label: 'Onboarding',   color: '#1EC87A' },
+  nurture:      { label: 'Nutrição',     color: '#21A0C4' },
+  closing:      { label: 'Fecho',        color: '#D1FF00' },
+}
+
+const AUTO_TEMPLATES: AutoTemplate[] = [
+  {
+    id: 'tpl-cold-reactivation',
+    name: 'Reactivação de Leads Frias',
+    description: 'Sequência automática para leads sem contacto há +7 dias com score em queda — aumenta re-engagement em 34%.',
+    category: 'reactivation',
+    highlight: true,
+    steps: [
+      { icon: '❄️', label: 'Gatilho: 7 dias sem contacto', detail: 'Score caiu ≥15pts na última semana' },
+      { icon: '💬', label: 'WA: mensagem de check-in', detail: 'Template "reactivation_cold_pt" com nome personalizado' },
+      { icon: '⏰', label: 'Aguardar 48h', detail: 'Sem resposta → continuar sequência' },
+      { icon: '📧', label: 'Email: oferta exclusiva', detail: 'Desconto 20% ou conteúdo de valor gratuito' },
+      { icon: '⏰', label: 'Aguardar 72h', detail: 'Ainda sem resposta → escalar' },
+      { icon: '📞', label: 'Notificar agente', detail: 'Alerta urgente + tag "cold-escalated"' },
+    ],
+  },
+  {
+    id: 'tpl-hot-lead-onboarding',
+    name: 'Onboarding Lead HOT',
+    description: 'Boas-vindas imediatas para leads com score >80 — acção em <5min após entrada no pipeline.',
+    category: 'onboarding',
+    steps: [
+      { icon: '🔥', label: 'Gatilho: score >80 ao criar', detail: 'Lead nova com score inicial elevado' },
+      { icon: '💬', label: 'WA: boas-vindas personalizadas', detail: 'Template "welcome_hot" com fonte de tráfego' },
+      { icon: '📋', label: 'Mover para "Qualificada"', detail: 'Skip stage de qualificação automático' },
+      { icon: '🔔', label: 'Notif. urgente ao agente', detail: '"Lead HOT disponível — fechar em 24h"' },
+    ],
+  },
+  {
+    id: 'tpl-proposal-nurture',
+    name: 'Nutrição Pós-Proposta',
+    description: 'Sequência de follow-up para leads na etapa de proposta sem resposta — mantém top-of-mind.',
+    category: 'nurture',
+    steps: [
+      { icon: '📋', label: 'Gatilho: etapa = Proposta enviada', detail: '24h na etapa sem resposta' },
+      { icon: '📧', label: 'Email: resumo da proposta', detail: 'PDF resumo + benefícios chave' },
+      { icon: '⏰', label: 'Aguardar 3 dias', detail: 'Ainda em silêncio' },
+      { icon: '💬', label: 'WA: pergunta de objecção', detail: '"Há alguma dúvida que posso esclarecer?"' },
+      { icon: '📞', label: 'Agendar call de follow-up', detail: 'Link Calendly automático no WA' },
+    ],
+  },
+  {
+    id: 'tpl-post-call-closing',
+    name: 'Fecho Pós-Call',
+    description: 'Acções imediatas após call com resultado "positivo" — acelera o fecho em 2-3 dias.',
+    category: 'closing',
+    steps: [
+      { icon: '✅', label: 'Gatilho: call concluída (positivo)', detail: 'Outcome = completed + score ≥75' },
+      { icon: '📧', label: 'Email: proposta dentro de 1h', detail: 'Template "proposal_post_call"' },
+      { icon: '💬', label: 'WA: confirmação de envio', detail: '"Proposta enviada! Reveja e diga-me o que acha."' },
+      { icon: '⏰', label: 'Aguardar 24h', detail: 'Sem assinatura → lembrete' },
+      { icon: '🏷️', label: 'Tag: close-pipeline', detail: 'Mover para etapa de negociação' },
+    ],
+  },
+]
+
+function TemplateCard({ tpl, onActivate }: { tpl: AutoTemplate; onActivate: (tpl: AutoTemplate) => void }) {
+  const [expanded, setExpanded] = useState(false)
+  const cat = CATEGORY_CFG[tpl.category]
+
+  return (
+    <div
+      className="rounded-2xl p-5 flex flex-col gap-4 transition-all"
+      style={{
+        background: 'var(--s2)',
+        border: tpl.highlight ? '1px solid rgba(232,69,69,0.3)' : '1px solid rgba(255,255,255,0.04)',
+        boxShadow: tpl.highlight ? '0 0 20px rgba(232,69,69,0.08)' : 'none',
+      }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${cat.color}18`, color: cat.color }}>
+              {cat.label}
+            </span>
+            {tpl.highlight && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(232,69,69,0.15)', color: '#E84545' }}>
+                RECOMENDADO
+              </span>
+            )}
+          </div>
+          <p className="text-sm font-semibold" style={{ color: 'var(--t1)' }}>{tpl.name}</p>
+          <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--t3)' }}>{tpl.description}</p>
+        </div>
+      </div>
+
+      {/* Steps preview */}
+      <div className={`flex flex-col gap-1.5 overflow-hidden transition-all ${expanded ? '' : 'max-h-28'}`} style={{ position: 'relative' }}>
+        {tpl.steps.map((step, i) => (
+          <div key={i} className="flex items-center gap-2.5">
+            <span className="text-sm flex-shrink-0 w-5 text-center">{step.icon}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-semibold leading-tight" style={{ color: 'var(--t2)' }}>{step.label}</p>
+              {expanded && <p className="text-[9px] mt-0.5" style={{ color: 'var(--t3)' }}>{step.detail}</p>}
+            </div>
+            <span className="text-[9px] font-bold flex-shrink-0" style={{ color: 'var(--t3)' }}>#{i + 1}</span>
+          </div>
+        ))}
+        {!expanded && tpl.steps.length > 3 && (
+          <div className="absolute bottom-0 left-0 right-0 h-6" style={{ background: 'linear-gradient(transparent, var(--s2))' }} />
+        )}
+      </div>
+
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="text-[10px] font-bold self-start"
+        style={{ color: 'var(--t3)' }}
+      >
+        {expanded ? '▲ Menos' : `▼ Ver ${tpl.steps.length} passos`}
+      </button>
+
+      <button
+        onClick={() => onActivate(tpl)}
+        className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all hover:opacity-90"
+        style={{
+          background: tpl.highlight ? '#E84545' : 'var(--cyan)',
+          color: tpl.highlight ? '#fff' : '#0F1318',
+        }}
+      >
+        <Zap size={12} /> Usar este template
+      </button>
+    </div>
+  )
+}
+
 /* ─────────────────────── main page ─────────────────────── */
 
 export default function AutomacoesPage() {
@@ -592,6 +735,7 @@ export default function AutomacoesPage() {
   const [selectedAuto, setSelectedAuto]     = useState<Automation | null>(null)
   const [statusFilter, setStatusFilter]     = useState<AutoStatus | 'all'>('all')
   const [automations, setAutomations]       = useState<Automation[]>(MOCK_AUTOMATIONS)
+  const [pageTab, setPageTab]               = useState<'automacoes' | 'templates'>('automacoes')
 
   const filtered = automations.filter(a =>
     statusFilter === 'all' || a.status === statusFilter
@@ -604,6 +748,36 @@ export default function AutomacoesPage() {
         ? prev.map(a => a.id === automation.id ? automation : a)
         : [automation, ...prev]
     })
+  }
+
+  const activateTemplate = (tpl: AutoTemplate) => {
+    const newAuto: Automation = {
+      id:         `a${Date.now()}`,
+      name:       tpl.name,
+      trigger:    tpl.category === 'reactivation' ? 'time_delay'
+                : tpl.category === 'onboarding'   ? 'lead_created'
+                : tpl.category === 'nurture'       ? 'stage_changed'
+                : 'after_call',
+      conditions: [],
+      actions:    tpl.steps
+        .filter(s => s.icon === '💬' || s.icon === '📧' || s.icon === '🔔' || s.icon === '📞')
+        .slice(0, 3)
+        .map((s, i) => ({
+          id:     `ac${Date.now()}${i}`,
+          type:   s.icon === '💬' ? 'send_whatsapp'
+                : s.icon === '📧' ? 'send_email'
+                : s.icon === '🔔' ? 'notify_agent'
+                : 'platform_notification' as ActionType,
+          params: { template: tpl.id },
+        })),
+      status:     'active',
+      runs_total: 0,
+      runs_today: 0,
+      last_run:   null,
+      created_at: new Date().toISOString().slice(0, 10),
+    }
+    setAutomations(prev => [newAuto, ...prev])
+    setPageTab('automacoes')
   }
 
   const totalRuns  = automations.reduce((s, a) => s + a.runs_today, 0)
@@ -643,77 +817,114 @@ export default function AutomacoesPage() {
             </div>
           </div>
 
-          {/* Stats row */}
-          <div className="grid grid-cols-4 gap-4">
-            {[
-              { label: 'Activas',     value: String(active),     color: '#1EC87A', icon: Play },
-              { label: 'Runs hoje',   value: String(totalRuns),  color: '#21A0C4', icon: Activity },
-              { label: 'Total runs',  value: String(automations.reduce((s,a)=>s+a.runs_total,0)), color: '#F5A623', icon: Zap },
-              { label: 'Erros hoje',  value: String(errorCount), color: '#E84545', icon: AlertCircle },
-            ].map(({ label, value, color, icon: Icon }) => (
-              <div key={label} className="bg-[var(--s2)] border border-white/5 rounded-2xl p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${color}22` }}>
-                  <Icon size={18} style={{ color }} />
-                </div>
-                <div>
-                  <p className="metric-xl">{value}</p>
-                  <p className="text-xs text-[#7FA8C4]">{label}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Filter */}
-          <div className="flex bg-[var(--s2)] border border-white/5 rounded-xl overflow-hidden w-fit">
-            {(['all', 'active', 'paused', 'draft'] as const).map(s => (
+          {/* Page tab */}
+          <div className="flex gap-0.5 rounded-xl p-1 w-fit" style={{ background: 'var(--s1)' }}>
+            {([
+              { id: 'automacoes', label: 'Minhas automações' },
+              { id: 'templates',  label: `Templates  (${AUTO_TEMPLATES.length})` },
+            ] as const).map(({ id, label }) => (
               <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-4 py-2 text-xs font-700 transition-colors ${
-                  statusFilter === s ? 'bg-[#21A0C4] text-[#050D14]' : 'text-[#7FA8C4] hover:text-white'
-                }`}
+                key={id}
+                onClick={() => setPageTab(id)}
+                className="px-4 py-2 rounded-lg text-xs font-bold transition-all"
+                style={{
+                  background: pageTab === id ? 'var(--s3)' : 'transparent',
+                  color:      pageTab === id ? 'var(--t1)' : 'var(--t3)',
+                }}
               >
-                {s === 'all' ? 'Todas' : STATUS_MAP[s].label}
+                {label}
               </button>
             ))}
           </div>
 
-          {/* Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto flex-1">
-            {filtered.map(auto => (
-              <AutoCard
-                key={auto.id}
-                auto={auto}
-                selected={selectedAuto?.id === auto.id}
-                onSelect={() => setSelectedAuto(selectedAuto?.id === auto.id ? null : auto)}
-              />
-            ))}
-          </div>
-
-          {/* Activity log */}
-          <div>
-            <p className="text-xs font-700 text-[#3D6080] uppercase tracking-widest mb-3">Actividade Recente</p>
-            <div className="bg-[var(--s2)] border border-white/5 rounded-2xl overflow-hidden">
-              <div className="divide-y divide-white/5">
-                {MOCK_LOGS.map(log => (
-                  <div key={log.id} className="flex items-center gap-4 px-4 py-3">
-                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      log.status === 'success' ? 'bg-[#1EC87A20]' : 'bg-[#E8454520]'
-                    }`}>
-                      {log.status === 'success'
-                        ? <Check size={11} className="text-[#1EC87A]" />
-                        : <AlertCircle size={11} className="text-[#E84545]" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-700 text-white">{log.auto_name}</p>
-                      <p className="text-[10px] text-[#3D6080]">Lead: {log.lead}</p>
-                    </div>
-                    <p className="text-[10px] text-[#3D6080] flex-shrink-0">{log.time}</p>
-                  </div>
+          {/* Templates gallery */}
+          {pageTab === 'templates' && (
+            <div className="flex-1 overflow-y-auto flex flex-col gap-5">
+              <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: 'rgba(232,69,69,0.06)', border: '1px solid rgba(232,69,69,0.2)' }}>
+                <span className="text-2xl">❄️</span>
+                <div>
+                  <p className="text-sm font-bold" style={{ color: '#E84545' }}>Leads frias detectadas — acção recomendada</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--t3)' }}>7 leads sem contacto há +7 dias com score em queda. Active o template de reactivação abaixo.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {AUTO_TEMPLATES.map(tpl => (
+                  <TemplateCard key={tpl.id} tpl={tpl} onActivate={activateTemplate} />
                 ))}
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Automações tab content */}
+          {pageTab === 'automacoes' && (<>
+            <div className="grid grid-cols-4 gap-4">
+              {[
+                { label: 'Activas',     value: String(active),     color: '#1EC87A', icon: Play },
+                { label: 'Runs hoje',   value: String(totalRuns),  color: '#21A0C4', icon: Activity },
+                { label: 'Total runs',  value: String(automations.reduce((s,a)=>s+a.runs_total,0)), color: '#F5A623', icon: Zap },
+                { label: 'Erros hoje',  value: String(errorCount), color: '#E84545', icon: AlertCircle },
+              ].map(({ label, value, color, icon: Icon }) => (
+                <div key={label} className="bg-[var(--s2)] border border-white/5 rounded-2xl p-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${color}22` }}>
+                    <Icon size={18} style={{ color }} />
+                  </div>
+                  <div>
+                    <p className="metric-xl">{value}</p>
+                    <p className="text-xs text-[#7FA8C4]">{label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex bg-[var(--s2)] border border-white/5 rounded-xl overflow-hidden w-fit">
+              {(['all', 'active', 'paused', 'draft'] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`px-4 py-2 text-xs font-700 transition-colors ${
+                    statusFilter === s ? 'bg-[#21A0C4] text-[#050D14]' : 'text-[#7FA8C4] hover:text-white'
+                  }`}
+                >
+                  {s === 'all' ? 'Todas' : STATUS_MAP[s].label}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto flex-1">
+              {filtered.map(auto => (
+                <AutoCard
+                  key={auto.id}
+                  auto={auto}
+                  selected={selectedAuto?.id === auto.id}
+                  onSelect={() => setSelectedAuto(selectedAuto?.id === auto.id ? null : auto)}
+                />
+              ))}
+            </div>
+
+            <div>
+              <p className="text-xs font-700 text-[#3D6080] uppercase tracking-widest mb-3">Actividade Recente</p>
+              <div className="bg-[var(--s2)] border border-white/5 rounded-2xl overflow-hidden">
+                <div className="divide-y divide-white/5">
+                  {MOCK_LOGS.map(log => (
+                    <div key={log.id} className="flex items-center gap-4 px-4 py-3">
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        log.status === 'success' ? 'bg-[#1EC87A20]' : 'bg-[#E8454520]'
+                      }`}>
+                        {log.status === 'success'
+                          ? <Check size={11} className="text-[#1EC87A]" />
+                          : <AlertCircle size={11} className="text-[#E84545]" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-700 text-white">{log.auto_name}</p>
+                        <p className="text-[10px] text-[#3D6080]">Lead: {log.lead}</p>
+                      </div>
+                      <p className="text-[10px] text-[#3D6080] flex-shrink-0">{log.time}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>)}
         </div>
 
         {/* Detail panel */}

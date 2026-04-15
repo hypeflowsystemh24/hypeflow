@@ -173,6 +173,42 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave?: (auto
   const [stageTarget, setStageTarget] = useState('')
   const [delayHours, setDelayHours] = useState(24)
   const [actions, setActions]       = useState<ActionType[]>(['send_whatsapp'])
+  const [conditions, setConditions] = useState<Condition[]>([])
+
+  const addCondition = () => setConditions(cs => [...cs, { id: `cond-${Date.now()}`, field: 'source', op: 'equals', value: '' }])
+  const removeCondition = (id: string) => setConditions(cs => cs.filter(c => c.id !== id))
+  const updateCondition = (id: string, patch: Partial<Condition>) =>
+    setConditions(cs => cs.map(c => c.id === id ? { ...c, ...patch } : c))
+
+  const CONDITION_FIELDS = [
+    { value: 'source',      label: 'Fonte' },
+    { value: 'score',       label: 'Score' },
+    { value: 'temperature', label: 'Temperatura' },
+    { value: 'stage',       label: 'Etapa' },
+    { value: 'tags',        label: 'Tags' },
+    { value: 'email',       label: 'Email' },
+    { value: 'company',     label: 'Empresa' },
+  ]
+  const CONDITION_OPS: { value: ConditionOp; label: string }[] = [
+    { value: 'equals',       label: 'é igual a' },
+    { value: 'contains',     label: 'contém' },
+    { value: 'greater_than', label: 'maior que' },
+    { value: 'less_than',    label: 'menor que' },
+    { value: 'is_empty',     label: 'está vazio' },
+    { value: 'not_empty',    label: 'não está vazio' },
+  ]
+
+  /* Plain-English rule summary */
+  const triggerLabel = TRIGGER_MAP[trigger]?.label ?? trigger
+  const condSummary = conditions.length === 0
+    ? 'sem condições adicionais'
+    : conditions.map(c => {
+        const fl = CONDITION_FIELDS.find(f => f.value === c.field)?.label ?? c.field
+        const op = CONDITION_OPS.find(o => o.value === c.op)?.label ?? c.op
+        const noValue = c.op === 'is_empty' || c.op === 'not_empty'
+        return `${fl} ${op}${noValue ? '' : ` "${c.value}"`}`
+      }).join(' E ')
+  const actSummary = actions.map(a => ACTION_MAP[a]?.label ?? a).join(', ')
 
   const addAction = () => setActions(a => [...a, 'add_tag'])
   const removeAction = (i: number) => setActions(a => a.filter((_, idx) => idx !== i))
@@ -318,6 +354,50 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave?: (auto
             </div>
           )}
 
+          {/* Conditions */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="label-system">Condições (SE)</label>
+              <button onClick={addCondition} className="text-[10px] font-700 text-[#21A0C4] hover:text-[#4FC8EA] transition-colors">
+                + Adicionar condição
+              </button>
+            </div>
+            {conditions.length === 0 ? (
+              <div className="rounded-xl px-3 py-2.5 text-xs" style={{ background: 'var(--s2)', color: 'var(--t3)', border: '1px dashed rgba(255,255,255,0.07)' }}>
+                Nenhuma condição — aplica-se a todos os leads
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {conditions.map((cond, idx) => (
+                  <div key={cond.id} className="flex items-center gap-2">
+                    {idx > 0 && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: 'rgba(33,160,196,0.12)', color: 'var(--cyan)' }}>E</span>
+                    )}
+                    <select value={cond.field} onChange={e => updateCondition(cond.id, { field: e.target.value })}
+                      className="flex-1 rounded-xl px-2 py-2 text-xs outline-none"
+                      style={{ background: 'var(--s2)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--t1)' }}>
+                      {CONDITION_FIELDS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                    </select>
+                    <select value={cond.op} onChange={e => updateCondition(cond.id, { op: e.target.value as ConditionOp })}
+                      className="flex-1 rounded-xl px-2 py-2 text-xs outline-none"
+                      style={{ background: 'var(--s2)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--t1)' }}>
+                      {CONDITION_OPS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    {cond.op !== 'is_empty' && cond.op !== 'not_empty' && (
+                      <input value={cond.value} onChange={e => updateCondition(cond.id, { value: e.target.value })}
+                        placeholder="valor"
+                        className="flex-1 rounded-xl px-2 py-2 text-xs outline-none"
+                        style={{ background: 'var(--s2)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--t1)' }} />
+                    )}
+                    <button onClick={() => removeCondition(cond.id)} className="p-1.5 rounded-lg text-[#3D6080] hover:text-[#E84545] transition-colors flex-shrink-0">
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Actions */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -356,6 +436,16 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave?: (auto
           </div>
         </div>
 
+        {/* Plain-English rule summary */}
+        <div className="mx-5 mb-4 rounded-xl p-3" style={{ background: 'rgba(33,160,196,0.06)', border: '1px solid rgba(33,160,196,0.15)' }}>
+          <p className="text-[9px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--cyan)' }}>Resumo da Regra</p>
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--t2)' }}>
+            <span style={{ color: 'var(--t1)', fontWeight: 700 }}>Quando</span> {triggerLabel.toLowerCase()}
+            {conditions.length > 0 && <> <span style={{ color: 'var(--t1)', fontWeight: 700 }}>e</span> {condSummary}</>}
+            {' '}<span style={{ color: 'var(--t1)', fontWeight: 700 }}>→ fazer:</span> {actSummary}
+          </p>
+        </div>
+
         <div className="p-5 pt-0 flex gap-3">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/5 text-sm text-[#7FA8C4] hover:border-white/10 transition-colors">
             Cancelar
@@ -367,7 +457,7 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave?: (auto
                 id:          `a${Date.now()}`,
                 name:        name.trim(),
                 trigger,
-                conditions:  [],
+                conditions,
                 actions:     actions.map((type, i) => ({ id: `ac${Date.now()}${i}`, type, params: {} })),
                 status:      'active',
                 runs_total:  0,

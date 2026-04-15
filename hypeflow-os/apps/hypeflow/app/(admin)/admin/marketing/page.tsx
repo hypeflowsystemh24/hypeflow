@@ -6,7 +6,7 @@ import {
   BarChart2, TrendingUp, Users, Send, Clock, CheckCircle,
   XCircle, MousePointer, AlertCircle, ChevronRight,
   Smartphone, Zap, Target, ArrowUpRight, Copy, Trash2,
-  GitMerge, ArrowDown, X, Check,
+  GitMerge, ArrowDown, X, Check, SlidersHorizontal, Filter,
 } from 'lucide-react'
 
 /* ─── Types ─── */
@@ -496,9 +496,417 @@ function CampaignRow({ c }: { c: Campaign }) {
   )
 }
 
+/* ─── Audience Segmentation Types & Builder ─── */
+type RuleField = 'temperature' | 'source' | 'score' | 'tag' | 'status' | 'stage'
+type RuleOp    = 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains'
+
+interface AudienceRule {
+  id: string
+  field: RuleField
+  op: RuleOp
+  value: string
+}
+
+interface AudienceGroup {
+  id: string
+  logic: 'and' | 'or'
+  rules: AudienceRule[]
+}
+
+interface AudienceSegment {
+  id: string
+  name: string
+  groups: AudienceGroup[]
+  groupLogic: 'and' | 'or'
+  estimatedSize: number
+  updatedAt: string
+}
+
+const MOCK_SEGMENTS: AudienceSegment[] = [
+  {
+    id: 'seg1',
+    name: 'Hot Leads com Score Alto',
+    groupLogic: 'and',
+    estimatedSize: 87,
+    updatedAt: '2024-03-10',
+    groups: [
+      {
+        id: 'g1', logic: 'and',
+        rules: [
+          { id: 'r1', field: 'temperature', op: 'equals', value: 'hot' },
+          { id: 'r2', field: 'score',       op: 'greater_than', value: '80' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'seg2',
+    name: 'Leads Facebook sem Contacto',
+    groupLogic: 'and',
+    estimatedSize: 234,
+    updatedAt: '2024-03-08',
+    groups: [
+      {
+        id: 'g2', logic: 'and',
+        rules: [
+          { id: 'r3', field: 'source', op: 'equals', value: 'meta' },
+          { id: 'r4', field: 'status', op: 'equals', value: 'new' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'seg3',
+    name: 'Qualificados ou Proposta',
+    groupLogic: 'or',
+    estimatedSize: 156,
+    updatedAt: '2024-03-05',
+    groups: [
+      { id: 'g3', logic: 'and', rules: [{ id: 'r5', field: 'stage', op: 'equals', value: 'Qualificando' }] },
+      { id: 'g4', logic: 'and', rules: [{ id: 'r6', field: 'stage', op: 'equals', value: 'Proposta Enviada' }] },
+    ],
+  },
+]
+
+const FIELD_OPTIONS: { value: RuleField; label: string }[] = [
+  { value: 'temperature', label: 'Temperatura' },
+  { value: 'source',      label: 'Fonte' },
+  { value: 'score',       label: 'Score' },
+  { value: 'tag',         label: 'Tag' },
+  { value: 'status',      label: 'Status' },
+  { value: 'stage',       label: 'Etapa' },
+]
+
+const OP_OPTIONS: { value: RuleOp; label: string }[] = [
+  { value: 'equals',       label: 'é igual a' },
+  { value: 'not_equals',   label: 'não é' },
+  { value: 'greater_than', label: 'maior que' },
+  { value: 'less_than',    label: 'menor que' },
+  { value: 'contains',     label: 'contém' },
+]
+
+const FIELD_VALUES: Partial<Record<RuleField, string[]>> = {
+  temperature: ['hot', 'warm', 'cold'],
+  source:      ['meta', 'instagram', 'google_ads', 'linkedin', 'whatsapp', 'organic'],
+  status:      ['new', 'active', 'won', 'lost'],
+  stage:       ['Novo Lead', 'Qualificando', 'Call Agendada', 'Proposta Enviada', 'Fechado Won'],
+}
+
+function RuleRow({ rule, onUpdate, onRemove }: {
+  rule: AudienceRule
+  onUpdate: (patch: Partial<AudienceRule>) => void
+  onRemove: () => void
+}) {
+  const valueOptions = FIELD_VALUES[rule.field]
+  return (
+    <div className="flex items-center gap-2">
+      <select
+        value={rule.field}
+        onChange={e => onUpdate({ field: e.target.value as RuleField, value: '' })}
+        className="px-2 py-1.5 rounded-lg text-xs outline-none flex-shrink-0"
+        style={{ background: 'var(--s3)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--t1)', minWidth: 110 }}
+      >
+        {FIELD_OPTIONS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+      </select>
+
+      <select
+        value={rule.op}
+        onChange={e => onUpdate({ op: e.target.value as RuleOp })}
+        className="px-2 py-1.5 rounded-lg text-xs outline-none flex-shrink-0"
+        style={{ background: 'var(--s3)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--t1)', minWidth: 100 }}
+      >
+        {OP_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+
+      {valueOptions ? (
+        <select
+          value={rule.value}
+          onChange={e => onUpdate({ value: e.target.value })}
+          className="px-2 py-1.5 rounded-lg text-xs outline-none flex-1"
+          style={{ background: 'var(--s3)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--t1)' }}
+        >
+          <option value="">Seleccionar...</option>
+          {valueOptions.map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+      ) : (
+        <input
+          value={rule.value}
+          onChange={e => onUpdate({ value: e.target.value })}
+          placeholder={rule.field === 'score' ? '0–100' : 'Valor...'}
+          type={rule.field === 'score' ? 'number' : 'text'}
+          className="px-2 py-1.5 rounded-lg text-xs outline-none flex-1"
+          style={{ background: 'var(--s3)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--t1)' }}
+        />
+      )}
+
+      <button onClick={onRemove} className="p-1.5 rounded-lg flex-shrink-0" style={{ color: 'var(--danger)' }}>
+        <X size={12} />
+      </button>
+    </div>
+  )
+}
+
+function AudienceBuilder() {
+  const [segments, setSegments] = useState<AudienceSegment[]>(MOCK_SEGMENTS)
+  const [editing, setEditing] = useState<AudienceSegment | null>(null)
+  const [showNew, setShowNew] = useState(false)
+
+  const newBlankSegment = (): AudienceSegment => ({
+    id: `seg${Date.now()}`,
+    name: '',
+    groupLogic: 'and',
+    estimatedSize: 0,
+    updatedAt: new Date().toISOString().slice(0, 10),
+    groups: [{ id: `g${Date.now()}`, logic: 'and', rules: [{ id: `r${Date.now()}`, field: 'temperature', op: 'equals', value: '' }] }],
+  })
+
+  const seg = editing ?? (showNew ? newBlankSegment() : null)
+
+  const updateRule = (gIdx: number, rIdx: number, patch: Partial<AudienceRule>) => {
+    if (!seg) return
+    const groups = seg.groups.map((g, gi) => gi !== gIdx ? g : {
+      ...g,
+      rules: g.rules.map((r, ri) => ri !== rIdx ? r : { ...r, ...patch }),
+    })
+    const updated = { ...seg, groups }
+    editing ? setEditing(updated) : setEditing({ ...newBlankSegment(), ...updated })
+  }
+
+  const addRule = (gIdx: number) => {
+    if (!seg) return
+    const groups = seg.groups.map((g, gi) => gi !== gIdx ? g : {
+      ...g,
+      rules: [...g.rules, { id: `r${Date.now()}`, field: 'temperature' as RuleField, op: 'equals' as RuleOp, value: '' }],
+    })
+    const updated = { ...seg, groups }
+    setEditing(updated)
+  }
+
+  const addGroup = () => {
+    if (!seg) return
+    const updated = { ...seg, groups: [...seg.groups, { id: `g${Date.now()}`, logic: 'and' as const, rules: [{ id: `r${Date.now()}`, field: 'temperature' as RuleField, op: 'equals' as RuleOp, value: '' }] }] }
+    setEditing(updated)
+  }
+
+  const saveSegment = () => {
+    if (!seg || !seg.name.trim()) return
+    const withSize = { ...seg, estimatedSize: Math.floor(Math.random() * 300 + 50) }
+    setSegments(prev => {
+      const exists = prev.find(s => s.id === withSize.id)
+      return exists ? prev.map(s => s.id === withSize.id ? withSize : s) : [withSize, ...prev]
+    })
+    setEditing(null)
+    setShowNew(false)
+  }
+
+  if (seg) {
+    return (
+      <div className="flex flex-col gap-5">
+        {/* Builder header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => { setEditing(null); setShowNew(false) }}
+              className="text-sm px-3 py-1.5 rounded-xl"
+              style={{ border: '1px solid rgba(255,255,255,0.08)', color: 'var(--t3)' }}
+            >
+              ← Voltar
+            </button>
+            <h3 className="font-bold" style={{ color: 'var(--t1)' }}>
+              {editing ? `Editar: ${editing.name}` : 'Nova Audiência'}
+            </h3>
+          </div>
+          <button
+            onClick={saveSegment}
+            disabled={!seg.name.trim()}
+            className="px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-40"
+            style={{ background: 'var(--cyan)', color: '#0D1117' }}
+          >
+            Guardar Audiência
+          </button>
+        </div>
+
+        {/* Name + Group logic */}
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <label className="text-xs font-semibold uppercase tracking-wider block mb-1.5" style={{ color: 'var(--t3)' }}>Nome da Audiência</label>
+            <input
+              value={seg.name}
+              onChange={e => setEditing({ ...seg, name: e.target.value })}
+              placeholder="Ex: Hot Leads sem contacto..."
+              className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+              style={{ background: 'var(--s2)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--t1)' }}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wider block mb-1.5" style={{ color: 'var(--t3)' }}>Lógica entre grupos</label>
+            <div className="flex rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+              {(['and', 'or'] as const).map(logic => (
+                <button
+                  key={logic}
+                  onClick={() => setEditing({ ...seg, groupLogic: logic })}
+                  className="px-4 py-2.5 text-sm font-bold uppercase"
+                  style={{
+                    background: seg.groupLogic === logic ? (logic === 'and' ? 'var(--cyan)' : '#F5A623') : 'var(--s2)',
+                    color: seg.groupLogic === logic ? '#0D1117' : 'var(--t3)',
+                  }}
+                >
+                  {logic}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Groups */}
+        {seg.groups.map((group, gIdx) => (
+          <div key={group.id} className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+            {/* Group header */}
+            <div className="flex items-center justify-between px-4 py-2.5" style={{ background: 'var(--s2)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--t3)' }}>Grupo {gIdx + 1}</span>
+                <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+                  {(['and', 'or'] as const).map(logic => (
+                    <button
+                      key={logic}
+                      onClick={() => {
+                        const groups = seg.groups.map((g, gi) => gi === gIdx ? { ...g, logic } : g)
+                        setEditing({ ...seg, groups })
+                      }}
+                      className="px-2.5 py-1 text-[10px] font-bold uppercase"
+                      style={{
+                        background: group.logic === logic ? (logic === 'and' ? 'var(--cyan)' : '#F5A623') : 'transparent',
+                        color: group.logic === logic ? '#0D1117' : 'var(--t3)',
+                      }}
+                    >
+                      {logic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {seg.groups.length > 1 && (
+                <button
+                  onClick={() => setEditing({ ...seg, groups: seg.groups.filter((_, gi) => gi !== gIdx) })}
+                  className="p-1 rounded" style={{ color: 'var(--danger)' }}
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Rules */}
+            <div className="p-4 flex flex-col gap-2.5" style={{ background: 'var(--s1)' }}>
+              {group.rules.map((rule, rIdx) => (
+                <RuleRow
+                  key={rule.id}
+                  rule={rule}
+                  onUpdate={patch => updateRule(gIdx, rIdx, patch)}
+                  onRemove={() => {
+                    const groups = seg.groups.map((g, gi) => gi !== gIdx ? g : { ...g, rules: g.rules.filter((_, ri) => ri !== rIdx) })
+                    setEditing({ ...seg, groups })
+                  }}
+                />
+              ))}
+              <button
+                onClick={() => addRule(gIdx)}
+                className="text-xs font-semibold mt-1 w-fit"
+                style={{ color: 'var(--cyan)' }}
+              >
+                + Adicionar Regra
+              </button>
+            </div>
+          </div>
+        ))}
+
+        <button
+          onClick={addGroup}
+          className="flex items-center justify-center gap-2 py-3 rounded-2xl text-sm"
+          style={{ border: '2px dashed rgba(255,255,255,0.08)', color: 'var(--t3)' }}
+        >
+          <Plus size={14} /> Adicionar Grupo de Regras
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal size={14} style={{ color: 'var(--cyan)' }} />
+          <p className="font-bold" style={{ color: 'var(--t1)' }}>Audiências Salvas</p>
+          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--s2)', color: 'var(--t3)' }}>
+            {segments.length}
+          </span>
+        </div>
+        <button
+          onClick={() => setShowNew(true)}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold"
+          style={{ background: 'var(--cyan)', color: '#0D1117' }}
+        >
+          <Plus size={13} /> Nova Audiência
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {segments.map(seg => (
+          <div key={seg.id} className="card p-5">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <p className="font-semibold" style={{ color: 'var(--t1)' }}>{seg.name}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--t3)' }}>
+                  {seg.groups.length} grupo{seg.groups.length !== 1 ? 's' : ''} ·{' '}
+                  {seg.groups.reduce((acc, g) => acc + g.rules.length, 0)} regras ·{' '}
+                  Actualizado: {seg.updatedAt}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xl font-bold font-display" style={{ color: 'var(--cyan)' }}>{seg.estimatedSize.toLocaleString()}</p>
+                <p className="text-xs" style={{ color: 'var(--t3)' }}>leads estimados</p>
+              </div>
+            </div>
+
+            {/* Rule pills preview */}
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {seg.groups.flatMap((g, gi) => [
+                ...g.rules.map((r, ri) => (
+                  <span key={`${gi}-${ri}`} className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'var(--s2)', color: 'var(--t2)' }}>
+                    {FIELD_OPTIONS.find(f => f.value === r.field)?.label} {OP_OPTIONS.find(o => o.value === r.op)?.label} <span style={{ color: 'var(--cyan)' }}>{r.value || '…'}</span>
+                  </span>
+                )),
+                gi < seg.groups.length - 1 ? (
+                  <span key={`logic-${gi}`} className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase" style={{ background: seg.groupLogic === 'and' ? 'rgba(33,160,196,0.15)' : 'rgba(245,166,35,0.15)', color: seg.groupLogic === 'and' ? 'var(--cyan)' : '#F5A623' }}>
+                    {seg.groupLogic}
+                  </span>
+                ) : null,
+              ])}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEditing(seg)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+                style={{ background: 'var(--s2)', color: 'var(--t2)' }}
+              >
+                <Edit2 size={11} /> Editar
+              </button>
+              <button
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+                style={{ background: 'rgba(33,160,196,0.12)', color: 'var(--cyan)' }}
+              >
+                <Send size={11} /> Usar em Campanha
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /* ─── Main Page ─── */
 export default function MarketingPage() {
-  const [tab, setTab] = useState<'campaigns' | 'sequences' | 'templates'>('campaigns')
+  const [tab, setTab] = useState<'campaigns' | 'sequences' | 'templates' | 'audiences'>('campaigns')
   const [typeFilter, setTypeFilter] = useState<CampaignType | 'all'>('all')
   const [statusFilter, setStatusFilter] = useState<CampaignStatus | 'all'>('all')
   const [showCrossBuilder, setShowCrossBuilder] = useState(false)
@@ -562,14 +970,17 @@ export default function MarketingPage() {
 
       {/* Tabs */}
       <div className="flex items-center gap-1 px-1 py-1 rounded-2xl w-fit" style={{ background: 'var(--s2)' }}>
-        {(['campaigns', 'sequences', 'templates'] as const).map(t => (
+        {(['campaigns', 'sequences', 'audiences', 'templates'] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className="px-5 py-2 rounded-xl text-sm font-semibold transition-all"
             style={{ background: tab === t ? 'var(--s3)' : 'transparent', color: tab === t ? 'var(--t1)' : 'var(--t3)' }}
           >
-            {t === 'campaigns' ? `Campanhas (${MOCK_CAMPAIGNS.length})` : t === 'sequences' ? `Sequências (${MOCK_SEQUENCES.length})` : 'Templates'}
+            {t === 'campaigns' ? `Campanhas (${MOCK_CAMPAIGNS.length})`
+              : t === 'sequences' ? `Sequências (${MOCK_SEQUENCES.length + crossSequences.length})`
+              : t === 'audiences' ? 'Audiências'
+              : 'Templates'}
           </button>
         ))}
       </div>
@@ -685,6 +1096,8 @@ export default function MarketingPage() {
           </div>
         </div>
       )}
+
+      {tab === 'audiences' && <AudienceBuilder />}
 
       {tab === 'templates' && (
         <div className="grid grid-cols-3 gap-4">

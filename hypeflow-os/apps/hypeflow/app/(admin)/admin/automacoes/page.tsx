@@ -166,9 +166,13 @@ const TRIGGER_OPTIONS: TriggerType[] = ['lead_created', 'stage_changed', 'score_
 const ACTION_OPTIONS: ActionType[]   = ['send_whatsapp', 'send_email', 'platform_notification', 'move_stage', 'assign_agent', 'add_tag', 'notify_agent', 'trigger_n8n', 'trigger_make', 'trigger_manychat']
 
 function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave?: (automation: Automation) => void }) {
-  const [name, setName]       = useState('')
-  const [trigger, setTrigger] = useState<TriggerType>('lead_created')
-  const [actions, setActions] = useState<ActionType[]>(['send_whatsapp'])
+  const [name, setName]             = useState('')
+  const [trigger, setTrigger]       = useState<TriggerType>('lead_created')
+  const [scoreMin, setScoreMin]     = useState(70)
+  const [scoreMax, setScoreMax]     = useState(100)
+  const [stageTarget, setStageTarget] = useState('')
+  const [delayHours, setDelayHours] = useState(24)
+  const [actions, setActions]       = useState<ActionType[]>(['send_whatsapp'])
 
   const addAction = () => setActions(a => [...a, 'add_tag'])
   const removeAction = (i: number) => setActions(a => a.filter((_, idx) => idx !== i))
@@ -218,6 +222,101 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave?: (auto
               })}
             </div>
           </div>
+
+          {/* Trigger config — score_threshold */}
+          {trigger === 'score_threshold' && (
+            <div className="p-4 rounded-2xl" style={{ background: 'rgba(232,168,56,0.08)', border: '1px solid rgba(232,168,56,0.2)' }}>
+              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: '#E8A838' }}>
+                ⭐ Configurar Score
+              </p>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: 'var(--t3)' }}>Score mínimo</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range" min={0} max={100} value={scoreMin}
+                      onChange={e => setScoreMin(Number(e.target.value))}
+                      className="flex-1" style={{ accentColor: '#E8A838' }}
+                    />
+                    <span className="text-sm font-bold w-8 text-right" style={{ color: '#E8A838' }}>{scoreMin}</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: 'var(--t3)' }}>Score máximo</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range" min={0} max={100} value={scoreMax}
+                      onChange={e => setScoreMax(Number(e.target.value))}
+                      className="flex-1" style={{ accentColor: '#E8A838' }}
+                    />
+                    <span className="text-sm font-bold w-8 text-right" style={{ color: '#E8A838' }}>{scoreMax}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--s3)' }}>
+                <div
+                  className="h-2 rounded-full"
+                  style={{
+                    marginLeft: `${scoreMin}%`,
+                    width: `${Math.max(0, scoreMax - scoreMin)}%`,
+                    background: 'linear-gradient(90deg, #E8A838, #E84545)',
+                  }}
+                />
+              </div>
+              <p className="text-[10px] mt-2" style={{ color: 'var(--t3)' }}>
+                Dispara quando o score estiver entre <span style={{ color: '#E8A838' }}>{scoreMin}–{scoreMax}</span>
+              </p>
+            </div>
+          )}
+
+          {/* Trigger config — stage_changed */}
+          {trigger === 'stage_changed' && (
+            <div className="p-4 rounded-2xl" style={{ background: 'rgba(245,166,35,0.08)', border: '1px solid rgba(245,166,35,0.2)' }}>
+              <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#F5A623' }}>
+                📋 Etapa destino
+              </p>
+              <select
+                value={stageTarget}
+                onChange={e => setStageTarget(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                style={{ background: 'var(--s2)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--t1)' }}
+              >
+                <option value="">Qualquer etapa</option>
+                <option value="Novo Lead">Novo Lead</option>
+                <option value="Qualificando">Qualificando</option>
+                <option value="Call Agendada">Call Agendada</option>
+                <option value="Proposta Enviada">Proposta Enviada</option>
+                <option value="lost">Perdida</option>
+                <option value="won">Ganha</option>
+              </select>
+            </div>
+          )}
+
+          {/* Trigger config — time_delay */}
+          {trigger === 'time_delay' && (
+            <div className="p-4 rounded-2xl" style={{ background: 'rgba(127,168,196,0.08)', border: '1px solid rgba(127,168,196,0.2)' }}>
+              <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#7FA8C4' }}>
+                ⏰ Configurar atraso
+              </p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number" min={1} value={delayHours}
+                  onChange={e => setDelayHours(Number(e.target.value))}
+                  className="w-24 px-3 py-2 rounded-xl text-sm outline-none text-center"
+                  style={{ background: 'var(--s2)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--t1)' }}
+                />
+                <select
+                  className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
+                  style={{ background: 'var(--s2)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--t1)' }}
+                >
+                  <option>horas após criação</option>
+                  <option>horas após último contacto</option>
+                  <option>dias sem resposta</option>
+                  <option>dias na mesma etapa</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Actions */}
           <div>

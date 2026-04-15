@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import {
   TrendingUp, TrendingDown, Users, Phone,
@@ -90,8 +90,51 @@ function ChartTip({ active, payload, label }: { active?: boolean; payload?: Arra
 type DashTab = 'prospeccao' | 'nurturing' | 'fecho'
 
 export default function DashboardPage() {
-  const [now] = useState(() => new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }))
+  const [now, setNow] = useState(() => new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }))
   const [dashTab, setDashTab] = useState<DashTab>('prospeccao')
+
+  /* ── Live lead counter ── */
+  const [liveLeadCount, setLiveLeadCount] = useState(24)
+  const [lastHourCount, setLastHourCount] = useState(7)
+  const [pulse, setPulse] = useState(false)
+  const [recentEntries, setRecentEntries] = useState<{ name: string; src: string; time: string }[]>([
+    { name: 'Tiago F.', src: 'META', time: 'agora' },
+    { name: 'Ana R.',   src: 'IG',   time: '2min' },
+    { name: 'Carlos M.',src: 'GG',   time: '5min' },
+  ])
+  const tickRef = useRef(0)
+
+  useEffect(() => {
+    const clockId = setInterval(() => {
+      setNow(new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }))
+    }, 30000)
+
+    /* Simulate a new lead arriving every ~18–28 seconds */
+    const SOURCES = ['META', 'IG', 'GG', 'LI', 'WA', 'ORG']
+    const NAMES   = ['Ricardo S.', 'Marta P.', 'Bruno F.', 'Inês L.', 'Nuno A.', 'Catarina M.']
+    let delay = 18000 + Math.random() * 10000
+    let timeoutId: ReturnType<typeof setTimeout>
+
+    function scheduleNext() {
+      timeoutId = setTimeout(() => {
+        tickRef.current += 1
+        const idx = tickRef.current % NAMES.length
+        const entry = { name: NAMES[idx]!, src: SOURCES[idx % SOURCES.length]!, time: 'agora' }
+        setLiveLeadCount(c => c + 1)
+        setLastHourCount(c => c + 1)
+        setPulse(true)
+        setRecentEntries(prev => [entry, ...prev.slice(0, 2)].map((e, i) =>
+          i === 0 ? e : { ...e, time: i === 1 ? '2min' : '5min' }
+        ))
+        setTimeout(() => setPulse(false), 1200)
+        delay = 18000 + Math.random() * 10000
+        scheduleNext()
+      }, delay)
+    }
+    scheduleNext()
+
+    return () => { clearInterval(clockId); clearTimeout(timeoutId) }
+  }, [])
   const overviewQuery = api.admin.dashboard.getOverview.useQuery()
 
   const LEADS_WEEK = overviewQuery.data?.leadsWeek?.length ? overviewQuery.data.leadsWeek : MOCK_LEADS_WEEK
@@ -194,6 +237,102 @@ export default function DashboardPage() {
         <p className="text-xs" style={{ color: 'var(--t3)' }}>
           {dashTab === 'prospeccao' ? 'Métricas de aquisição e qualificação' : dashTab === 'nurturing' ? 'Métricas de engajamento e aquecimento' : 'Métricas de conversão e receita'}
         </p>
+      </div>
+
+      {/* ── Live Lead Counter ── */}
+      <div
+        className="rounded-2xl p-4 flex items-center gap-6 overflow-hidden relative"
+        style={{
+          background: 'var(--s1)',
+          border: pulse ? '1px solid rgba(0,229,160,0.35)' : '1px solid rgba(255,255,255,0.05)',
+          transition: 'border-color 0.4s ease',
+          boxShadow: pulse ? '0 0 24px rgba(0,229,160,0.08)' : 'none',
+        }}
+      >
+        {/* Pulse ring */}
+        {pulse && (
+          <div
+            className="absolute inset-0 rounded-2xl pointer-events-none"
+            style={{ animation: 'pulse-ring 1.2s ease-out forwards', border: '2px solid rgba(0,229,160,0.4)' }}
+          />
+        )}
+
+        {/* Counter */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(0,229,160,0.1)' }}
+          >
+            <Zap size={18} style={{ color: 'var(--success)' }} />
+          </div>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span
+                className="font-black tabular-nums"
+                style={{
+                  fontSize: 32,
+                  lineHeight: 1,
+                  color: pulse ? 'var(--success)' : 'var(--t1)',
+                  transition: 'color 0.3s ease',
+                }}
+              >
+                {liveLeadCount}
+              </span>
+              <span className="text-xs font-medium" style={{ color: 'var(--t3)' }}>leads hoje</span>
+            </div>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full live-dot" style={{ background: 'var(--success)' }} />
+              <span className="text-[10px]" style={{ color: 'var(--t3)' }}>
+                <b style={{ color: 'var(--success)' }}>{lastHourCount}</b> na última hora
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="w-px self-stretch flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+        {/* Recent entries feed */}
+        <div className="flex-1 flex flex-col gap-1 min-w-0">
+          <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--t3)' }}>Recentes</p>
+          {recentEntries.map((e, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span
+                className="text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
+                style={{ background: 'rgba(33,160,196,0.15)', color: 'var(--cyan)' }}
+              >
+                {e.src}
+              </span>
+              <span className="text-xs truncate" style={{ color: i === 0 ? 'var(--t1)' : 'var(--t2)' }}>{e.name}</span>
+              <span className="text-[10px] ml-auto flex-shrink-0" style={{ color: 'var(--t3)' }}>{e.time}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div className="w-px self-stretch flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+        {/* Sparkline — last 7 days mini bars */}
+        <div className="flex items-end gap-1 flex-shrink-0" style={{ height: 40 }}>
+          {LEADS_WEEK.map((d, i) => {
+            const max = Math.max(...LEADS_WEEK.map(x => x.v))
+            const h = Math.round((d.v / max) * 36)
+            const isLast = i === LEADS_WEEK.length - 1
+            return (
+              <div key={i} className="flex flex-col items-center gap-0.5">
+                <div
+                  style={{
+                    width: 6,
+                    height: h,
+                    borderRadius: 3,
+                    background: isLast ? 'var(--success)' : 'rgba(255,255,255,0.12)',
+                    transition: 'height 0.3s ease',
+                  }}
+                />
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {/* ── KPI row ── */}

@@ -6,11 +6,13 @@ import {
   BarChart2, TrendingUp, Users, Send, Clock, CheckCircle,
   XCircle, MousePointer, AlertCircle, ChevronRight,
   Smartphone, Zap, Target, ArrowUpRight, Copy, Trash2,
+  GitMerge, ArrowDown, X, Check,
 } from 'lucide-react'
 
 /* ─── Types ─── */
 type CampaignType = 'email' | 'sms' | 'whatsapp'
 type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused'
+type SequenceChannel = 'email' | 'whatsapp' | 'sms'
 
 interface Campaign {
   id: string
@@ -26,6 +28,23 @@ interface Campaign {
   scheduledAt?: string
   sentAt?: string
   tags: string[]
+}
+
+interface SequenceStep {
+  channel: SequenceChannel
+  delayDays: number
+  message: string
+  condition?: 'no_reply' | 'no_open' | 'no_click' | 'always'
+}
+
+interface CrossChannelSequence {
+  id: string
+  name: string
+  trigger: string
+  steps: SequenceStep[]
+  enrolled: number
+  active: boolean
+  conversionRate: number
 }
 
 interface Sequence {
@@ -55,6 +74,356 @@ const MOCK_SEQUENCES: Sequence[] = [
   { id: '3', name: 'Follow-up Proposta', type: 'whatsapp', trigger: 'stage_changed', steps: 3, enrolled: 56, active: true, conversionRate: 31.2 },
   { id: '4', name: 'Reactivação 30 Dias', type: 'email', trigger: 'time_delay', steps: 4, enrolled: 189, active: false, conversionRate: 8.7 },
 ]
+
+const MOCK_CROSS_SEQUENCES: CrossChannelSequence[] = [
+  {
+    id: 'cc1',
+    name: 'Activação Novo Lead',
+    trigger: 'lead_created',
+    enrolled: 312,
+    active: true,
+    conversionRate: 22.8,
+    steps: [
+      { channel: 'whatsapp', delayDays: 0, message: 'Olá {nome}! Obrigado pelo interesse. Posso agendar 15min?', condition: 'always' },
+      { channel: 'email',    delayDays: 1, message: 'Boas-vindas — {empresa} | Proposta de valor', condition: 'no_reply' },
+      { channel: 'whatsapp', delayDays: 3, message: 'Oi {nome}, só para confirmar que recebeu o email. Alguma dúvida?', condition: 'no_reply' },
+      { channel: 'sms',      delayDays: 5, message: '{nome}, última tentativa — disponível esta semana?', condition: 'no_reply' },
+    ],
+  },
+  {
+    id: 'cc2',
+    name: 'Recuperação Pós-Proposta',
+    trigger: 'stage_changed',
+    enrolled: 89,
+    active: true,
+    conversionRate: 34.1,
+    steps: [
+      { channel: 'email',    delayDays: 0, message: 'Proposta em anexo — {empresa}', condition: 'always' },
+      { channel: 'whatsapp', delayDays: 2, message: 'Olá {nome}! Recebeu a nossa proposta?', condition: 'no_open' },
+      { channel: 'email',    delayDays: 4, message: 'Follow-up: ainda interessado?', condition: 'no_reply' },
+      { channel: 'whatsapp', delayDays: 7, message: 'Posso esclarecer alguma dúvida sobre a proposta?', condition: 'no_reply' },
+    ],
+  },
+]
+
+const CHANNEL_CONFIG: Record<SequenceChannel, { label: string; color: string; icon: React.ElementType }> = {
+  whatsapp: { label: 'WhatsApp', color: '#25D366', icon: Smartphone },
+  email:    { label: 'Email',    color: '#EA4335', icon: Mail },
+  sms:      { label: 'SMS',      color: '#F5A623', icon: MessageSquare },
+}
+
+const CONDITION_LABELS: Record<NonNullable<SequenceStep['condition']>, string> = {
+  always:   'Sempre',
+  no_reply: 'Sem resposta',
+  no_open:  'Sem abertura',
+  no_click: 'Sem clique',
+}
+
+/* ─── Cross-Channel Builder Modal ─── */
+function CrossChannelBuilderModal({ onClose, onSave }: {
+  onClose: () => void
+  onSave: (seq: CrossChannelSequence) => void
+}) {
+  const [name, setName] = useState('')
+  const [trigger, setTrigger] = useState('lead_created')
+  const [steps, setSteps] = useState<SequenceStep[]>([
+    { channel: 'whatsapp', delayDays: 0, message: '', condition: 'always' },
+    { channel: 'email',    delayDays: 2, message: '', condition: 'no_reply' },
+  ])
+
+  const addStep = () => setSteps(s => [...s, { channel: 'email', delayDays: (s[s.length - 1]?.delayDays ?? 0) + 2, message: '', condition: 'no_reply' }])
+  const removeStep = (i: number) => setSteps(s => s.filter((_, idx) => idx !== i))
+  const updateStep = (i: number, patch: Partial<SequenceStep>) =>
+    setSteps(s => s.map((step, idx) => idx === i ? { ...step, ...patch } : step))
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div
+        className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl overflow-hidden"
+        style={{ background: 'var(--s1)', border: '1px solid rgba(255,255,255,0.08)' }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(33,160,196,0.15)' }}>
+              <GitMerge size={15} style={{ color: 'var(--cyan)' }} />
+            </div>
+            <div>
+              <h2 className="font-bold" style={{ color: 'var(--t1)' }}>Nova Sequência Cross-Canal</h2>
+              <p className="text-xs" style={{ color: 'var(--t3)' }}>Cascata multi-canal com condições</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl" style={{ color: 'var(--t3)' }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+          {/* Name + Trigger */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider block mb-1.5" style={{ color: 'var(--t3)' }}>Nome</label>
+              <input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Ex: Activação Novo Lead..."
+                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+                style={{ background: 'var(--s2)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--t1)' }}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider block mb-1.5" style={{ color: 'var(--t3)' }}>Gatilho</label>
+              <select
+                value={trigger}
+                onChange={e => setTrigger(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+                style={{ background: 'var(--s2)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--t1)' }}
+              >
+                <option value="lead_created">Lead criada</option>
+                <option value="stage_changed">Etapa alterada</option>
+                <option value="score_threshold">Score atingido</option>
+                <option value="time_delay">Tempo decorrido</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Steps */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--t3)' }}>Passos da Cascata</p>
+            <div className="flex flex-col gap-0">
+              {steps.map((step, i) => {
+                const cfg = CHANNEL_CONFIG[step.channel]
+                const Icon = cfg.icon
+                return (
+                  <div key={i}>
+                    <div
+                      className="flex items-start gap-3 p-4 rounded-2xl"
+                      style={{ background: 'var(--s2)', border: `1px solid ${cfg.color}25` }}
+                    >
+                      {/* Channel selector */}
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: `${cfg.color}18` }}>
+                        <Icon size={14} style={{ color: cfg.color }} />
+                      </div>
+
+                      <div className="flex-1 grid grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: 'var(--t3)' }}>Canal</label>
+                          <select
+                            value={step.channel}
+                            onChange={e => updateStep(i, { channel: e.target.value as SequenceChannel })}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                            style={{ background: 'var(--s3)', color: 'var(--t1)', border: '1px solid rgba(255,255,255,0.05)' }}
+                          >
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="email">Email</option>
+                            <option value="sms">SMS</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: 'var(--t3)' }}>Aguardar (dias)</label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={step.delayDays}
+                            onChange={e => updateStep(i, { delayDays: Number(e.target.value) })}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                            style={{ background: 'var(--s3)', color: 'var(--t1)', border: '1px solid rgba(255,255,255,0.05)' }}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: 'var(--t3)' }}>Condição</label>
+                          <select
+                            value={step.condition ?? 'always'}
+                            onChange={e => updateStep(i, { condition: e.target.value as SequenceStep['condition'] })}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                            style={{ background: 'var(--s3)', color: 'var(--t1)', border: '1px solid rgba(255,255,255,0.05)' }}
+                          >
+                            <option value="always">Sempre</option>
+                            <option value="no_reply">Sem resposta</option>
+                            <option value="no_open">Sem abertura</option>
+                            <option value="no_click">Sem clique</option>
+                          </select>
+                        </div>
+                        <div className="col-span-3">
+                          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: 'var(--t3)' }}>Mensagem</label>
+                          <input
+                            value={step.message}
+                            onChange={e => updateStep(i, { message: e.target.value })}
+                            placeholder="Use {nome}, {empresa} como variáveis..."
+                            className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                            style={{ background: 'var(--s3)', color: 'var(--t1)', border: '1px solid rgba(255,255,255,0.05)' }}
+                          />
+                        </div>
+                      </div>
+
+                      {steps.length > 1 && (
+                        <button
+                          onClick={() => removeStep(i)}
+                          className="p-1.5 rounded-lg mt-0.5 flex-shrink-0"
+                          style={{ color: 'var(--danger)' }}
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Connector */}
+                    {i < steps.length - 1 && (
+                      <div className="flex justify-center py-1.5">
+                        <ArrowDown size={14} style={{ color: 'var(--t3)' }} />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+
+              <button
+                onClick={addStep}
+                className="flex items-center justify-center gap-2 py-3 mt-3 rounded-2xl text-sm transition-all"
+                style={{ border: '2px dashed rgba(255,255,255,0.08)', color: 'var(--t3)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(33,160,196,0.4)'; (e.currentTarget as HTMLElement).style.color = 'var(--cyan)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLElement).style.color = 'var(--t3)' }}
+              >
+                <Plus size={14} /> Adicionar Passo
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl text-sm"
+            style={{ border: '1px solid rgba(255,255,255,0.08)', color: 'var(--t3)' }}
+          >
+            Cancelar
+          </button>
+          <button
+            disabled={!name.trim()}
+            onClick={() => {
+              onSave({
+                id: `cc${Date.now()}`,
+                name: name.trim(),
+                trigger,
+                steps,
+                enrolled: 0,
+                active: true,
+                conversionRate: 0,
+              })
+              onClose()
+            }}
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-40"
+            style={{ background: 'var(--cyan)', color: '#0D1117' }}
+          >
+            Criar Sequência
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Cross-Channel Sequence Card ─── */
+function CrossChannelCard({ seq }: { seq: CrossChannelSequence }) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div className="card overflow-hidden" style={{ border: expanded ? '1px solid rgba(33,160,196,0.25)' : undefined }}>
+      <div className="p-5 flex items-center gap-4 cursor-pointer" onClick={() => setExpanded(v => !v)}>
+        <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(33,160,196,0.12)' }}>
+          <GitMerge size={18} style={{ color: 'var(--cyan)' }} />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-0.5">
+            <p className="font-semibold" style={{ color: 'var(--t1)' }}>{seq.name}</p>
+            <div className="w-2 h-2 rounded-full" style={{ background: seq.active ? 'var(--success)' : 'var(--t3)' }} />
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(33,160,196,0.12)', color: 'var(--cyan)' }}>
+              CROSS-CANAL
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <p className="text-xs" style={{ color: 'var(--t3)' }}>
+              Trigger: {seq.trigger} · {seq.steps.length} passos · {seq.enrolled} inscritos
+            </p>
+            {/* Channel pills */}
+            <div className="flex gap-1">
+              {Array.from(new Set(seq.steps.map(s => s.channel))).map(ch => {
+                const cfg = CHANNEL_CONFIG[ch]
+                const Icon = cfg.icon
+                return (
+                  <div key={ch} className="w-4 h-4 rounded flex items-center justify-center" style={{ background: `${cfg.color}20` }}>
+                    <Icon size={9} style={{ color: cfg.color }} />
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <p className="text-xl font-bold font-display" style={{ color: 'var(--success)' }}>{seq.conversionRate}%</p>
+          <p className="text-xs" style={{ color: 'var(--t3)' }}>conversão</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button className="px-3 py-1.5 rounded-xl text-xs" style={{ background: 'var(--s2)', color: 'var(--t2)' }}>
+            <Edit2 size={12} className="inline mr-1" />Editar
+          </button>
+          <ChevronRight size={16} style={{ color: 'var(--t3)', transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 200ms' }} />
+        </div>
+      </div>
+
+      {/* Expanded step cascade */}
+      {expanded && (
+        <div className="px-5 pb-5" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          <div className="flex items-start gap-3 pt-4 overflow-x-auto pb-2">
+            {seq.steps.map((step, i) => {
+              const cfg = CHANNEL_CONFIG[step.channel]
+              const Icon = cfg.icon
+              return (
+                <div key={i} className="flex items-center gap-0 flex-shrink-0">
+                  <div className="flex flex-col items-center gap-1.5 w-40">
+                    {/* Day badge */}
+                    <div className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--s3)', color: 'var(--t3)' }}>
+                      {step.delayDays === 0 ? 'Imediato' : `+${step.delayDays}d`}
+                    </div>
+                    {/* Channel card */}
+                    <div
+                      className="w-full p-3 rounded-2xl"
+                      style={{ background: `${cfg.color}10`, border: `1px solid ${cfg.color}30` }}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: `${cfg.color}20` }}>
+                          <Icon size={11} style={{ color: cfg.color }} />
+                        </div>
+                        <span className="text-xs font-bold" style={{ color: cfg.color }}>{cfg.label}</span>
+                      </div>
+                      {step.message && (
+                        <p className="text-[10px] leading-relaxed" style={{ color: 'var(--t3)' }}>
+                          {step.message.slice(0, 60)}{step.message.length > 60 ? '…' : ''}
+                        </p>
+                      )}
+                      {step.condition && step.condition !== 'always' && (
+                        <div className="mt-2 text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--t3)' }}>
+                          <AlertCircle size={8} />
+                          {CONDITION_LABELS[step.condition]}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Arrow connector */}
+                  {i < seq.steps.length - 1 && (
+                    <ChevronRight size={16} className="mx-1 flex-shrink-0" style={{ color: 'var(--t3)' }} />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const TYPE_ICONS: Record<CampaignType, React.ElementType> = { email: Mail, sms: MessageSquare, whatsapp: Smartphone }
 const TYPE_COLORS: Record<CampaignType, string> = { email: '#EA4335', sms: '#F5A623', whatsapp: '#25D366' }
@@ -132,6 +501,8 @@ export default function MarketingPage() {
   const [tab, setTab] = useState<'campaigns' | 'sequences' | 'templates'>('campaigns')
   const [typeFilter, setTypeFilter] = useState<CampaignType | 'all'>('all')
   const [statusFilter, setStatusFilter] = useState<CampaignStatus | 'all'>('all')
+  const [showCrossBuilder, setShowCrossBuilder] = useState(false)
+  const [crossSequences, setCrossSequences] = useState<CrossChannelSequence[]>(MOCK_CROSS_SEQUENCES)
 
   const filtered = MOCK_CAMPAIGNS.filter(c => {
     if (typeFilter !== 'all' && c.type !== typeFilter) return false
@@ -148,6 +519,13 @@ export default function MarketingPage() {
 
   return (
     <div className="flex flex-col gap-5">
+      {showCrossBuilder && (
+        <CrossChannelBuilderModal
+          onClose={() => setShowCrossBuilder(false)}
+          onSave={seq => setCrossSequences(prev => [seq, ...prev])}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -239,41 +617,72 @@ export default function MarketingPage() {
       )}
 
       {tab === 'sequences' && (
-        <div className="flex flex-col gap-3">
-          {MOCK_SEQUENCES.map(seq => {
-            const Icon = TYPE_ICONS[seq.type]
-            const typeColor = TYPE_COLORS[seq.type]
-            return (
-              <div key={seq.id} className="card p-5 flex items-center gap-5">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: `${typeColor}15` }}>
-                  <Icon size={18} style={{ color: typeColor }} />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="font-semibold" style={{ color: 'var(--t1)' }}>{seq.name}</p>
-                    <div className="w-2 h-2 rounded-full" style={{ background: seq.active ? 'var(--success)' : 'var(--t3)' }} />
-                  </div>
-                  <p className="text-xs" style={{ color: 'var(--t3)' }}>
-                    Trigger: {seq.trigger} · {seq.steps} passos · {seq.enrolled} inscritos
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-bold font-display" style={{ color: 'var(--success)' }}>{seq.conversionRate}%</p>
-                  <p className="text-xs" style={{ color: 'var(--t3)' }}>conversão</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button className="px-3 py-1.5 rounded-xl text-xs" style={{ background: 'var(--s2)', color: 'var(--t2)' }}>
-                    <Edit2 size={12} className="inline mr-1" />Editar
-                  </button>
-                  <ChevronRight size={16} style={{ color: 'var(--t3)' }} />
-                </div>
+        <div className="flex flex-col gap-5">
+          {/* Cross-channel section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <GitMerge size={14} style={{ color: 'var(--cyan)' }} />
+                <p className="text-sm font-bold" style={{ color: 'var(--t2)' }}>Sequências Cross-Canal</p>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(33,160,196,0.12)', color: 'var(--cyan)' }}>
+                  NOVO
+                </span>
               </div>
-            )
-          })}
+              <button
+                onClick={() => setShowCrossBuilder(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
+                style={{ background: 'rgba(33,160,196,0.12)', color: 'var(--cyan)' }}
+              >
+                <Plus size={12} /> Nova Cross-Canal
+              </button>
+            </div>
+            <div className="flex flex-col gap-3">
+              {crossSequences.map(seq => <CrossChannelCard key={seq.id} seq={seq} />)}
+            </div>
+          </div>
 
-          <button className="flex items-center justify-center gap-2 py-4 rounded-2xl text-sm" style={{ border: '2px dashed rgba(255,255,255,0.08)', color: 'var(--t3)' }}>
-            <Plus size={15} /> Nova Sequência
-          </button>
+          {/* Divider */}
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+
+          {/* Standard sequences */}
+          <div>
+            <p className="text-sm font-bold mb-3" style={{ color: 'var(--t2)' }}>Sequências Padrão</p>
+            <div className="flex flex-col gap-3">
+              {MOCK_SEQUENCES.map(seq => {
+                const Icon = TYPE_ICONS[seq.type]
+                const typeColor = TYPE_COLORS[seq.type]
+                return (
+                  <div key={seq.id} className="card p-5 flex items-center gap-5">
+                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: `${typeColor}15` }}>
+                      <Icon size={18} style={{ color: typeColor }} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="font-semibold" style={{ color: 'var(--t1)' }}>{seq.name}</p>
+                        <div className="w-2 h-2 rounded-full" style={{ background: seq.active ? 'var(--success)' : 'var(--t3)' }} />
+                      </div>
+                      <p className="text-xs" style={{ color: 'var(--t3)' }}>
+                        Trigger: {seq.trigger} · {seq.steps} passos · {seq.enrolled} inscritos
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold font-display" style={{ color: 'var(--success)' }}>{seq.conversionRate}%</p>
+                      <p className="text-xs" style={{ color: 'var(--t3)' }}>conversão</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button className="px-3 py-1.5 rounded-xl text-xs" style={{ background: 'var(--s2)', color: 'var(--t2)' }}>
+                        <Edit2 size={12} className="inline mr-1" />Editar
+                      </button>
+                      <ChevronRight size={16} style={{ color: 'var(--t3)' }} />
+                    </div>
+                  </div>
+                )
+              })}
+              <button className="flex items-center justify-center gap-2 py-4 rounded-2xl text-sm" style={{ border: '2px dashed rgba(255,255,255,0.08)', color: 'var(--t3)' }}>
+                <Plus size={15} /> Nova Sequência
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

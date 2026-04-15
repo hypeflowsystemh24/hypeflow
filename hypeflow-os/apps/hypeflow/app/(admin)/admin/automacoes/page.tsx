@@ -5,8 +5,9 @@ import {
   Zap, Plus, Play, Pause, Settings, X,
   Check, AlertCircle, Activity, ArrowRight,
   Webhook, MessageSquare, Phone, UserCheck, Tag, Bell, Mail,
-  Monitor, CalendarClock, RefreshCw,
+  Monitor, CalendarClock, RefreshCw, GitBranch,
 } from 'lucide-react'
+import { VisualEditor } from './components/VisualEditor'
 
 /* ─────────────────────── types ─────────────────────── */
 
@@ -488,6 +489,7 @@ function AutoDetailPanel({ auto, onClose, onEdit }: { auto: Automation; onClose:
 
 export default function AutomacoesPage() {
   const [showBuilder, setShowBuilder]       = useState(false)
+  const [showVisualEditor, setShowVisualEditor] = useState(false)
   const [selectedAuto, setSelectedAuto]     = useState<Automation | null>(null)
   const [statusFilter, setStatusFilter]     = useState<AutoStatus | 'all'>('all')
   const [automations, setAutomations]       = useState<Automation[]>(MOCK_AUTOMATIONS)
@@ -509,6 +511,10 @@ export default function AutomacoesPage() {
   const active     = automations.filter(a => a.status === 'active').length
   const errorCount = MOCK_LOGS.filter(l => l.status === 'error').length
 
+  if (showVisualEditor) {
+    return <VisualEditor onClose={() => setShowVisualEditor(false)} />
+  }
+
   return (
     <>
       {showBuilder && <BuilderModal onClose={() => setShowBuilder(false)} onSave={handleSaveAutomation} />}
@@ -522,12 +528,20 @@ export default function AutomacoesPage() {
               <h1 className="display-title" style={{ fontSize: '2.75rem' }}>Automações</h1>
               <p className="text-sm text-[#7FA8C4] mt-0.5">{active} activas · {totalRuns} runs hoje</p>
             </div>
-            <button
-              onClick={() => setShowBuilder(true)}
-              className="flex items-center gap-2 text-xs font-700 text-[#050D14] bg-[#21A0C4] px-4 py-2 rounded-xl hover:bg-[#4FC8EA] transition-colors"
-            >
-              <Plus size={13} /> Nova Automação
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowVisualEditor(true)}
+                className="flex items-center gap-2 text-xs font-700 text-[#7FA8C4] border border-white/10 px-4 py-2 rounded-xl hover:border-[#21A0C4] hover:text-white transition-colors"
+              >
+                <GitBranch size={13} /> Editor Visual
+              </button>
+              <button
+                onClick={() => setShowBuilder(true)}
+                className="flex items-center gap-2 text-xs font-700 text-[#050D14] bg-[#21A0C4] px-4 py-2 rounded-xl hover:bg-[#4FC8EA] transition-colors"
+              >
+                <Plus size={13} /> Nova Automação
+              </button>
+            </div>
           </div>
 
           {/* Stats row */}

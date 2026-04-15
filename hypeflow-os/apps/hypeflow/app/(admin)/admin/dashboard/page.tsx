@@ -78,8 +78,11 @@ function ChartTip({ active, payload, label }: { active?: boolean; payload?: Arra
   )
 }
 
+type DashTab = 'prospeccao' | 'nurturing' | 'fecho'
+
 export default function DashboardPage() {
   const [now] = useState(() => new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }))
+  const [dashTab, setDashTab] = useState<DashTab>('prospeccao')
   const overviewQuery = api.admin.dashboard.getOverview.useQuery()
 
   const LEADS_WEEK = overviewQuery.data?.leadsWeek?.length ? overviewQuery.data.leadsWeek : MOCK_LEADS_WEEK
@@ -110,6 +113,34 @@ export default function DashboardPage() {
   }
   const focusCards = overviewQuery.data?.focusCards ?? []
 
+  /* ── Tab KPIs ── */
+  const TAB_KPIS: Record<DashTab, { label: string; value: string; sub: string; color: string; delta: string; up: boolean }[]> = {
+    prospeccao: [
+      { label: 'Leads Hoje',      value: String(kpis.leadsToday), sub: 'últimas 24h',     color: 'var(--cyan)',    delta: '+24%', up: true  },
+      { label: 'TFC Médio',       value: `${execution.tfcMinutes}min`,   sub: 'tempo 1º contacto', color: '#D1FF00',    delta: execution.tfcMinutes <= 5 ? '✓ SLA' : '⚠ SLA', up: execution.tfcMinutes <= 5 },
+      { label: 'Hot sem contacto',value: String(execution.hotWithoutContact), sub: 'Sniper activo', color: '#E84545', delta: 'urgente', up: false },
+      { label: 'Leads Semana',    value: String(weekTotalLeads),  sub: 'total 7 dias',     color: 'var(--success)', delta: '+18%', up: true  },
+    ],
+    nurturing: [
+      { label: 'Score Médio',      value: '74',   sub: 'todos os leads',      color: 'var(--cyan)',    delta: '+3pts', up: true  },
+      { label: 'Conversas Activas',value: '38',   sub: 'open conversations',  color: '#25D366',        delta: '+12%',  up: true  },
+      { label: 'Open Rate Email',  value: '31.2%',sub: 'campanhas activas',   color: '#D1FF00',        delta: '+2.1%', up: true  },
+      { label: 'Automações Hoje',  value: String(AUTOMATIONS_TODAY.reduce((s,a)=>s+a.runs, 0)), sub: 'execuções', color: '#F5A623', delta: '+8', up: true },
+    ],
+    fecho: [
+      { label: 'Show-up Rate',     value: '78%',  sub: 'calls realizadas',    color: 'var(--success)', delta: '+5%',  up: true  },
+      { label: 'Conv. Call→Prop.', value: '42%',  sub: 'proposta após call',  color: 'var(--cyan)',    delta: '+3%',  up: true  },
+      { label: 'Propostas Enviadas',value: '12',  sub: 'este mês',            color: '#D1FF00',        delta: '+4',   up: true  },
+      { label: 'MRR',              value: formattedMrr,           sub: 'clientes activos', color: '#F5A623',        delta: '+8%',  up: true  },
+    ],
+  }
+
+  const TAB_LABELS: Record<DashTab, string> = {
+    prospeccao: '🎯 Prospecção',
+    nurturing:  '🔥 Nurturing',
+    fecho:      '💰 Fecho',
+  }
+
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
 
@@ -134,20 +165,35 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* ── Perspective Tabs ── */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1 px-1 py-1 rounded-2xl" style={{ background: 'var(--s1)' }}>
+          {(Object.keys(TAB_LABELS) as DashTab[]).map(t => (
+            <button
+              key={t}
+              onClick={() => setDashTab(t)}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              style={{
+                background: dashTab === t ? 'var(--s3)' : 'transparent',
+                color: dashTab === t ? 'var(--t1)' : 'var(--t3)',
+              }}
+            >
+              {TAB_LABELS[t]}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs" style={{ color: 'var(--t3)' }}>
+          {dashTab === 'prospeccao' ? 'Métricas de aquisição e qualificação' : dashTab === 'nurturing' ? 'Métricas de engajamento e aquecimento' : 'Métricas de conversão e receita'}
+        </p>
+      </div>
+
       {/* ── KPI row ── */}
-        <div className="grid grid-cols-4 gap-4">
-          {[
-          { label: 'Leads Hoje',     value: String(kpis.leadsToday),  delta: '+0',  up: true,  sub: 'últimas 24h',      icon: Target, color: 'var(--cyan)' },
-          { label: 'Calls Hoje',     value: String(kpis.callsToday),  delta: '+0',  up: true,  sub: 'agenda do dia',    icon: Phone,  color: '#D1FF00' },
-          { label: 'Pipeline',       value: String(kpis.pipeline),    delta: '+0',  up: true,  sub: 'leads activos',    icon: Activity, color: 'var(--success)' },
-          { label: 'MRR',            value: formattedMrr,             delta: '+0%', up: true,  sub: 'clientes activos', icon: Euro,   color: '#F5A623' },
-        ].map(({ label, value, delta, up, sub, icon: Icon, color }) => (
+      <div className="grid grid-cols-4 gap-4">
+        {TAB_KPIS[dashTab].map(({ label, value, delta, up, sub, color }) => (
           <div key={label} className="card p-5 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium" style={{ color: 'var(--t2)' }}>{label}</p>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                <Icon size={16} style={{ color }} />
-              </div>
+              <div className="w-2 h-2 rounded-full" style={{ background: color }} />
             </div>
             <div>
               <p className="num-hero">{value}</p>

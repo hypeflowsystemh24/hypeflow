@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import {
   Search, TrendingUp, TrendingDown, ExternalLink,
   Phone, MessageSquare, X, Plus, Upload, Download,
   RefreshCw, Kanban, BarChart2, Users, Euro,
-  Check, ChevronRight, ArrowRight, Zap,
+  Check, ChevronRight, ArrowRight, Zap, LayoutGrid, List,
+  AlertTriangle, Clock, ChevronDown,
+  Eye, EyeOff, Send, Globe,
 } from 'lucide-react'
 import { PlatformIcon } from '@/components/icons/PlatformIcons'
 
@@ -370,10 +372,80 @@ function exportClientsCSV(clients: Client[]) {
 
 /* ─────────────────────── client panel ─────────────────────── */
 
-type PanelTab = 'overview' | 'pipeline'
+/* simple deterministic token for demo — production uses a DB-stored UUID */
+function derivePortalToken(clientId: string): string {
+  const base = `hypeflow-portal-${clientId}-v1`
+  let hash = 0
+  for (let i = 0; i < base.length; i++) {
+    hash = ((hash << 5) - hash + base.charCodeAt(i)) | 0
+  }
+  return Math.abs(hash).toString(16).padStart(8, '0') + clientId.replace(/\W/g, '') + 'abcdef1234567890'.slice(0, 16)
+}
+
+/* ─── Door (F05) types ─── */
+interface Door { id: string; label: string; url: string; favicon?: string }
+
+const DOOR_PRESETS: { label: string; icon: string }[] = [
+  { label: 'Google Analytics', icon: '📊' },
+  { label: 'Meta Ads Manager', icon: '📘' },
+  { label: 'Google Ads',       icon: '🔍' },
+  { label: 'Google Drive',     icon: '📁' },
+  { label: 'LinkedIn Ads',     icon: '💼' },
+  { label: 'Landing Page',     icon: '🌐' },
+  { label: 'Site do Cliente',  icon: '🏠' },
+  { label: 'Notion',           icon: '📝' },
+]
+
+/* ─── Message Board (F11) types ─── */
+interface BoardThread {
+  id: string; subject: string; type: 'briefing' | 'aprovacao' | 'relatorio' | 'estrategia' | 'outro'
+  body: string; author: string; created_at: string; replies: number; visible_to_client: boolean
+}
+
+const BOARD_TYPE_CFG = {
+  briefing:   { label: 'Briefing',   color: '#21A0C4' },
+  aprovacao:  { label: 'Aprovação',  color: '#F5A623' },
+  relatorio:  { label: 'Relatório',  color: '#00E5A0' },
+  estrategia: { label: 'Estratégia', color: '#D1FF00' },
+  outro:      { label: 'Outro',      color: '#7FA8C4' },
+} as const
+
+const MOCK_THREADS: BoardThread[] = [
+  { id: 'bt1', subject: 'Estratégia Q2 2026', type: 'estrategia', body: 'Proponho aumentar o orçamento em Meta em 20% com foco em lookalike audiences. Qual a vossa opinião?', author: 'Dex Silva', created_at: '2026-04-10', replies: 2, visible_to_client: true },
+  { id: 'bt2', subject: 'Briefing Campanha Primavera', type: 'briefing', body: 'Partilho o briefing da campanha de Primavera para aprovação.', author: 'Dex Silva', created_at: '2026-04-05', replies: 0, visible_to_client: false },
+  { id: 'bt3', subject: 'Relatório Março 2026', type: 'relatorio', body: 'Relatório mensal em anexo. Mês excelente — superámos a meta em 12%.', author: 'Dex Silva', created_at: '2026-04-01', replies: 1, visible_to_client: true },
+]
+
+const MOCK_DOORS: Door[] = [
+  { id: 'd1', label: 'Meta Ads Manager',  url: 'https://business.facebook.com',    favicon: '📘' },
+  { id: 'd2', label: 'Google Analytics',  url: 'https://analytics.google.com',      favicon: '📊' },
+  { id: 'd3', label: 'Google Drive',      url: 'https://drive.google.com',          favicon: '📁' },
+]
+
+type PanelTab = 'overview' | 'pipeline' | 'mensagens' | 'recursos'
 
 function ClientPanel({ client, onClose }: { client: Client; onClose: () => void }) {
   const [panelTab, setPanelTab] = useState<PanelTab>('overview')
+  const [showToken, setShowToken] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [threads, setThreads] = useState<BoardThread[]>(MOCK_THREADS)
+  const [doors, setDoors]     = useState<Door[]>(MOCK_DOORS)
+  const [newDoorLabel, setNewDoorLabel] = useState('')
+  const [newDoorUrl, setNewDoorUrl]     = useState('')
+  const [showNewThread, setShowNewThread] = useState(false)
+  const [ntSubject, setNtSubject] = useState('')
+  const [ntBody, setNtBody]       = useState('')
+  const [ntType, setNtType]       = useState<BoardThread['type']>('outro')
+  const [ntVisible, setNtVisible] = useState(false)
+  const portalToken = derivePortalToken(client.id)
+  const portalUrl   = typeof window !== 'undefined' ? `${window.location.origin}/portal/${portalToken}` : `/portal/${portalToken}`
+
+  const copyPortalLink = () => {
+    navigator.clipboard.writeText(portalUrl).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
   const st = STATUS_CFG[client.status]
 
   return (
@@ -405,9 +477,11 @@ function ClientPanel({ client, onClose }: { client: Client; onClose: () => void 
       {/* Tab nav */}
       <div className="flex px-5 pt-3 gap-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
         {([
-          { id: 'overview', label: 'Visão Geral', icon: BarChart2 },
-          { id: 'pipeline', label: 'Pipeline', icon: Kanban },
-        ] as const).map(({ id, label, icon: Icon }) => (
+          { id: 'overview',  label: 'Visão Geral', icon: BarChart2     },
+          { id: 'pipeline',  label: 'Pipeline',    icon: Kanban        },
+          { id: 'mensagens', label: 'Mensagens',   icon: MessageSquare },
+          { id: 'recursos',  label: 'Recursos',    icon: Globe         },
+        ] as { id: PanelTab; label: string; icon: React.ElementType }[]).map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setPanelTab(id)}
@@ -481,6 +555,47 @@ function ClientPanel({ client, onClose }: { client: Client; onClose: () => void 
               </div>
             </div>
 
+            {/* Client Portal section */}
+            <div className="rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--s2)', border: '1px solid rgba(33,160,196,0.15)' }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ExternalLink size={13} style={{ color: 'var(--cyan)' }} />
+                  <span className="text-xs font-bold" style={{ color: 'var(--t1)' }}>Portal do Cliente</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setShowToken(v => !v)}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded-lg tonal-hover"
+                    style={{ color: 'var(--t3)' }}
+                  >
+                    {showToken ? 'Ocultar' : 'Ver link'}
+                  </button>
+                  <button
+                    onClick={copyPortalLink}
+                    className="text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all"
+                    style={{ background: copied ? 'rgba(0,229,160,0.1)' : 'rgba(33,160,196,0.12)', color: copied ? 'var(--success)' : 'var(--cyan)' }}
+                  >
+                    {copied ? '✓ Copiado' : 'Copiar link'}
+                  </button>
+                  <a
+                    href={`/portal/${portalToken}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all tonal-hover"
+                    style={{ color: 'var(--t3)' }}
+                  >
+                    Abrir →
+                  </a>
+                </div>
+              </div>
+              {showToken && (
+                <p className="text-[10px] font-mono break-all px-2 py-1.5 rounded-lg" style={{ background: 'var(--s3)', color: 'var(--t3)' }}>
+                  /portal/{portalToken}
+                </p>
+              )}
+              <p className="text-[10px]" style={{ color: 'var(--t3)' }}>Acesso read-only · sem login · válido 90 dias</p>
+            </div>
+
             {/* Details */}
             <div className="flex flex-col gap-2">
               {[
@@ -500,18 +615,279 @@ function ClientPanel({ client, onClose }: { client: Client; onClose: () => void 
         {panelTab === 'pipeline' && (
           <ClientPipeline clientId={client.id} />
         )}
+
+        {/* ── F11 Message Board ── */}
+        {panelTab === 'mensagens' && (
+          <div className="flex flex-col gap-4">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--t3)' }}>
+                {threads.length} tópico{threads.length !== 1 ? 's' : ''}
+              </p>
+              <button
+                onClick={() => setShowNewThread(v => !v)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                style={{ background: showNewThread ? 'rgba(33,160,196,0.12)' : 'var(--s2)', color: 'var(--cyan)' }}
+              >
+                <Plus size={12} />
+                {showNewThread ? 'Cancelar' : 'Novo tópico'}
+              </button>
+            </div>
+
+            {/* New thread form */}
+            {showNewThread && (
+              <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: 'var(--s2)', border: '1px solid rgba(33,160,196,0.12)' }}>
+                <input
+                  type="text"
+                  placeholder="Assunto"
+                  value={ntSubject}
+                  onChange={e => setNtSubject(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs outline-none"
+                  style={{ background: 'var(--s3)', color: 'var(--t1)', border: '1px solid rgba(255,255,255,0.06)' }}
+                />
+                {/* Type selector */}
+                <div className="flex gap-2 flex-wrap">
+                  {(Object.entries(BOARD_TYPE_CFG) as [BoardThread['type'], { label: string; color: string }][]).map(([key, cfg]) => (
+                    <button
+                      key={key}
+                      onClick={() => setNtType(key)}
+                      className="px-2.5 py-1 rounded-full text-[10px] font-bold transition-all"
+                      style={{
+                        background: ntType === key ? `${cfg.color}20` : 'var(--s3)',
+                        color: ntType === key ? cfg.color : 'var(--t3)',
+                        border: ntType === key ? `1px solid ${cfg.color}40` : '1px solid transparent',
+                      }}
+                    >
+                      {cfg.label}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  rows={3}
+                  placeholder="Escreve a mensagem..."
+                  value={ntBody}
+                  onChange={e => setNtBody(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs outline-none resize-none"
+                  style={{ background: 'var(--s3)', color: 'var(--t1)', border: '1px solid rgba(255,255,255,0.06)' }}
+                />
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setNtVisible(v => !v)}
+                    className="flex items-center gap-1.5 text-[10px]"
+                    style={{ color: ntVisible ? 'var(--cyan)' : 'var(--t3)' }}
+                  >
+                    {ntVisible ? <Eye size={12} /> : <EyeOff size={12} />}
+                    {ntVisible ? 'Visível ao cliente' : 'Apenas interna'}
+                  </button>
+                  <button
+                    disabled={!ntSubject.trim() || !ntBody.trim()}
+                    onClick={() => {
+                      if (!ntSubject.trim() || !ntBody.trim()) return
+                      const newThread: BoardThread = {
+                        id: `bt${Date.now()}`,
+                        subject: ntSubject,
+                        type: ntType,
+                        body: ntBody,
+                        author: 'Eu',
+                        created_at: new Date().toISOString().slice(0, 10),
+                        replies: 0,
+                        visible_to_client: ntVisible,
+                      }
+                      setThreads(prev => [newThread, ...prev])
+                      setNtSubject('')
+                      setNtBody('')
+                      setNtType('outro')
+                      setNtVisible(false)
+                      setShowNewThread(false)
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-semibold transition-all"
+                    style={{
+                      background: 'rgba(33,160,196,0.15)',
+                      color: 'var(--cyan)',
+                      opacity: !ntSubject.trim() || !ntBody.trim() ? 0.4 : 1,
+                      cursor: !ntSubject.trim() || !ntBody.trim() ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    <Send size={11} />
+                    Publicar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Thread list */}
+            <div className="flex flex-col gap-2">
+              {threads.map(t => {
+                const cfg = BOARD_TYPE_CFG[t.type]
+                return (
+                  <div
+                    key={t.id}
+                    className="rounded-xl p-3 flex flex-col gap-2"
+                    style={{ background: 'var(--s2)' }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span
+                          className="text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                          style={{ background: `${cfg.color}18`, color: cfg.color }}
+                        >
+                          {cfg.label}
+                        </span>
+                        <p className="text-xs font-semibold truncate" style={{ color: 'var(--t1)' }}>{t.subject}</p>
+                      </div>
+                      {t.visible_to_client && (
+                        <Eye size={11} style={{ color: 'var(--cyan)', flexShrink: 0, marginTop: 2 }} />
+                      )}
+                    </div>
+                    <p className="text-[11px] leading-relaxed" style={{ color: 'var(--t2)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{t.body}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px]" style={{ color: 'var(--t3)' }}>{t.author} · {t.created_at}</span>
+                      {t.replies > 0 && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'var(--s3)', color: 'var(--t3)' }}>
+                          {t.replies} resposta{t.replies !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── F05 Doors / Recursos ── */}
+        {panelTab === 'recursos' && (
+          <div className="flex flex-col gap-5">
+            {/* Quick preset chips */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--t3)' }}>Adicionar porta rápida</p>
+              <div className="flex flex-wrap gap-2">
+                {DOOR_PRESETS.map(preset => {
+                  const added = doors.some(d => d.label === preset.label)
+                  return (
+                    <button
+                      key={preset.label}
+                      onClick={() => {
+                        if (added) return
+                        setNewDoorLabel(preset.label)
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold tonal-hover transition-all"
+                      style={{
+                        background: added ? 'rgba(0,229,160,0.08)' : 'var(--s2)',
+                        color: added ? 'var(--success)' : 'var(--t2)',
+                        cursor: added ? 'default' : 'pointer',
+                      }}
+                    >
+                      <span>{preset.icon}</span>
+                      {preset.label}
+                      {added && <Check size={10} />}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Custom door form */}
+            <div className="rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--s2)' }}>
+              <p className="text-xs font-semibold" style={{ color: 'var(--t2)' }}>Porta personalizada</p>
+              <input
+                type="text"
+                placeholder="Nome (ex: Landing Page)"
+                value={newDoorLabel}
+                onChange={e => setNewDoorLabel(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl text-xs outline-none"
+                style={{ background: 'var(--s3)', color: 'var(--t1)', border: '1px solid rgba(255,255,255,0.06)' }}
+              />
+              <input
+                type="url"
+                placeholder="URL (https://…)"
+                value={newDoorUrl}
+                onChange={e => setNewDoorUrl(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl text-xs outline-none"
+                style={{ background: 'var(--s3)', color: 'var(--t1)', border: '1px solid rgba(255,255,255,0.06)' }}
+              />
+              <button
+                disabled={!newDoorLabel.trim() || !newDoorUrl.trim()}
+                onClick={() => {
+                  if (!newDoorLabel.trim() || !newDoorUrl.trim()) return
+                  setDoors(prev => [
+                    ...prev,
+                    { id: `d${Date.now()}`, label: newDoorLabel.trim(), url: newDoorUrl.trim(), favicon: '🔗' },
+                  ])
+                  setNewDoorLabel('')
+                  setNewDoorUrl('')
+                }}
+                className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-all"
+                style={{
+                  background: 'rgba(33,160,196,0.12)',
+                  color: 'var(--cyan)',
+                  opacity: !newDoorLabel.trim() || !newDoorUrl.trim() ? 0.4 : 1,
+                  cursor: !newDoorLabel.trim() || !newDoorUrl.trim() ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <Plus size={12} />
+                Adicionar
+              </button>
+            </div>
+
+            {/* Doors list */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--t3)' }}>
+                {doors.length} porta{doors.length !== 1 ? 's' : ''} activa{doors.length !== 1 ? 's' : ''}
+              </p>
+              <div className="flex flex-col gap-2">
+                {doors.map(door => (
+                  <div
+                    key={door.id}
+                    className="flex items-center gap-3 p-3 rounded-xl"
+                    style={{ background: 'var(--s2)' }}
+                  >
+                    <span className="text-lg flex-shrink-0">{door.favicon ?? '🔗'}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold truncate" style={{ color: 'var(--t1)' }}>{door.label}</p>
+                      <p className="text-[10px] truncate" style={{ color: 'var(--t3)' }}>{door.url}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <a
+                        href={door.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-lg tonal-hover"
+                        style={{ color: 'var(--cyan)' }}
+                      >
+                        <ExternalLink size={12} />
+                      </a>
+                      <button
+                        onClick={() => setDoors(prev => prev.filter(d => d.id !== door.id))}
+                        className="p-1.5 rounded-lg tonal-hover"
+                        style={{ color: 'var(--t3)' }}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {doors.length === 0 && (
+                  <p className="text-xs text-center py-6" style={{ color: 'var(--t3)' }}>Nenhuma porta adicionada</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Actions */}
       <div className="p-4 grid grid-cols-3 gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        <button
-          onClick={() => window.open(`/portal?client=${client.id}`, '_blank')}
+        <a
+          href={`/portal/${portalToken}`}
+          target="_blank"
+          rel="noreferrer"
           className="flex flex-col items-center gap-1.5 p-3 rounded-xl tonal-hover transition-all"
           style={{ background: 'var(--s2)' }}
         >
           <ExternalLink size={15} style={{ color: 'var(--cyan)' }} />
           <span className="text-[9px] font-semibold" style={{ color: 'var(--t3)' }}>Portal</span>
-        </button>
+        </a>
         <a
           href={client.phone ? `tel:${client.phone}` : undefined}
           onClick={!client.phone ? (e) => e.preventDefault() : undefined}
@@ -537,6 +913,123 @@ function ClientPanel({ client, onClose }: { client: Client; onClose: () => void 
   )
 }
 
+/* ─────────────────────── mission control ─────────────────────── */
+
+const NEXT_ACTIONS: Record<string, string> = {
+  c1: 'Enviar relatório de Abril',
+  c2: 'Call de estratégia — esta semana',
+  c3: 'Proposta de upsell por enviar',
+  c4: 'Reunião de recuperação urgente',
+  c5: 'Revisão de performance Q1',
+  c6: 'Reactivação — sem contacto há 45 dias',
+}
+
+function MissionControlGrid({
+  clients,
+  onSelect,
+}: {
+  clients: Client[]
+  onSelect: (c: Client) => void
+}) {
+  const sorted = [...clients].sort((a, b) => {
+    const statusOrder = { at_risk: 0, churned: 1, active: 2 }
+    if (statusOrder[a.status] !== statusOrder[b.status])
+      return statusOrder[a.status] - statusOrder[b.status]
+    return a.health_score - b.health_score
+  })
+
+  return (
+    <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+      {sorted.map(client => {
+        const st   = STATUS_CFG[client.status]
+        const hc   = healthColor(client.health_score)
+        const next = NEXT_ACTIONS[client.id] ?? 'Sem acção pendente'
+        const isRisk = client.status === 'at_risk'
+
+        return (
+          <button
+            key={client.id}
+            onClick={() => onSelect(client)}
+            className="text-left rounded-2xl flex flex-col gap-3 p-4 transition-all tonal-hover"
+            style={{
+              background: 'var(--s1)',
+              boxShadow: isRisk
+                ? '0 0 0 1.5px rgba(245,166,35,0.35)'
+                : '0 1px 4px rgba(0,0,0,0.2)',
+            }}
+          >
+            {/* Top row: avatar + name + status */}
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
+                style={{ background: `${NICHE_COLORS[client.niche] ?? '#21A0C4'}18`, color: NICHE_COLORS[client.niche] ?? '#21A0C4' }}
+              >
+                {client.logo}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate" style={{ color: 'var(--t1)' }}>{client.name}</p>
+                <p className="text-[10px] truncate" style={{ color: 'var(--t3)' }}>{client.niche}</p>
+              </div>
+              <span
+                className="text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                style={{ background: `${st.color}18`, color: st.color }}
+              >
+                {st.label}
+              </span>
+            </div>
+
+            {/* Health bar */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px]" style={{ color: 'var(--t3)' }}>Health Score</span>
+                <span className="text-[11px] font-bold" style={{ color: hc }}>{client.health_score}</span>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--s3)' }}>
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${client.health_score}%`, background: hc }}
+                />
+              </div>
+            </div>
+
+            {/* MRR + trend */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px]" style={{ color: 'var(--t3)' }}>MRR</p>
+                <p className="text-sm font-bold" style={{ color: 'var(--cyan)' }}>
+                  {client.mrr > 0 ? `€${client.mrr.toLocaleString()}` : '—'}
+                </p>
+              </div>
+              <div className="flex items-center gap-1">
+                {client.cpl_change < 0
+                  ? <TrendingDown size={13} style={{ color: 'var(--success)' }} />
+                  : <TrendingUp size={13} style={{ color: 'var(--danger)' }} />}
+                <span className="text-[11px] font-semibold" style={{ color: client.cpl_change < 0 ? 'var(--success)' : 'var(--danger)' }}>
+                  {Math.abs(client.cpl_change).toFixed(1)}%
+                </span>
+              </div>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'var(--s3)', color: 'var(--t2)' }}>
+                {client.manager.split(' ').map(n => n[0]).join('').slice(0, 2)}
+              </div>
+            </div>
+
+            {/* Next action */}
+            <div
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl"
+              style={{ background: isRisk ? 'rgba(245,166,35,0.08)' : 'var(--s2)' }}
+            >
+              {isRisk
+                ? <AlertTriangle size={10} style={{ color: '#F5A623', flexShrink: 0 }} />
+                : <Clock size={10} style={{ color: 'var(--t3)', flexShrink: 0 }} />}
+              <p className="text-[10px] truncate" style={{ color: isRisk ? '#F5A623' : 'var(--t3)' }}>{next}</p>
+            </div>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 /* ─────────────────────── main page ─────────────────────── */
 
 export default function ClientesPage() {
@@ -545,6 +1038,7 @@ export default function ClientesPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [showImport, setShowImport] = useState(false)
   const [searchFocus, setSearchFocus] = useState(false)
+  const [viewMode, setViewMode]     = useState<'list' | 'mission'>('list')
 
   const filtered = MOCK_CLIENTS.filter(c => {
     const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.niche.toLowerCase().includes(search.toLowerCase())
@@ -589,6 +1083,25 @@ export default function ClientesPage() {
               >
                 <Download size={13} /> Exportar CSV
               </button>
+              {/* View mode toggle */}
+              <div className="flex rounded-xl overflow-hidden" style={{ background: 'var(--s1)' }}>
+                <button
+                  onClick={() => setViewMode('list')}
+                  title="Vista de tabela"
+                  className="p-2.5 transition-colors"
+                  style={{ background: viewMode === 'list' ? 'var(--s3)' : 'transparent', color: viewMode === 'list' ? 'var(--t1)' : 'var(--t3)' }}
+                >
+                  <List size={14} />
+                </button>
+                <button
+                  onClick={() => setViewMode('mission')}
+                  title="Mission Control"
+                  className="p-2.5 transition-colors"
+                  style={{ background: viewMode === 'mission' ? 'rgba(33,160,196,0.15)' : 'transparent', color: viewMode === 'mission' ? 'var(--cyan)' : 'var(--t3)' }}
+                >
+                  <LayoutGrid size={14} />
+                </button>
+              </div>
               <button
                 onClick={() => setShowImport(true)}
                 className="btn-lime flex items-center gap-2 px-5 py-2.5 text-sm rounded-xl"
@@ -652,8 +1165,24 @@ export default function ClientesPage() {
             </div>
           </div>
 
+          {/* Mission Control grid */}
+          {viewMode === 'mission' && (
+            <div className="flex-1 overflow-y-auto">
+              {filtered.length === 0 ? (
+                <div className="flex items-center justify-center h-40">
+                  <p className="text-sm" style={{ color: 'var(--t3)' }}>Nenhum cliente encontrado</p>
+                </div>
+              ) : (
+                <MissionControlGrid
+                  clients={filtered}
+                  onSelect={c => setSelectedClient(selectedClient?.id === c.id ? null : c)}
+                />
+              )}
+            </div>
+          )}
+
           {/* Table */}
-          <div className="rounded-2xl flex-1 overflow-hidden card">
+          {viewMode === 'list' && <div className="rounded-2xl flex-1 overflow-hidden card">
             <div className="overflow-auto h-full">
               <table className="w-full">
                 <thead className="sticky top-0" style={{ background: 'var(--s1)' }}>
@@ -741,7 +1270,7 @@ export default function ClientesPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </div>}
         </div>
 
         {/* Detail panel */}

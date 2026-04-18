@@ -1,16 +1,30 @@
 import { createTRPCRouter } from './trpc'
 
-// Admin routers (agency team)
-import { trafegoRouter }      from './routers/admin/trafego'
-import { callsRouter }        from './routers/admin/calls'
-import { pipelineRouter }     from './routers/admin/pipeline'
-import { leadsRouter }        from './routers/admin/leads'
-import { clientsRouter }      from './routers/admin/clients'
-import { automationsRouter }  from './routers/admin/automations'
-import { integrationsRouter } from './routers/admin/integrations'
-import { dashboardRouter }    from './routers/admin/dashboard'
+/* ── CRM ── */
+import { leadsRouter }        from './routers/admin/crm/leads'
+import { clientsRouter }      from './routers/admin/crm/clients'
+import { pipelineRouter }     from './routers/admin/crm/pipeline'
+import { conversasRouter }    from './routers/admin/crm/conversas'
 
-// Client routers (portal)
+/* ── Analytics ── */
+import { trafegoRouter }      from './routers/admin/analytics/trafego'
+import { dashboardRouter }    from './routers/admin/analytics/dashboard'
+
+/* ── Operações ── */
+import { callsRouter }        from './routers/admin/operacoes/calls'
+import { equipaRouter }       from './routers/admin/operacoes/equipa'
+import { parceirosRouter }    from './routers/admin/operacoes/parceiros'
+
+/* ── Conteúdo ── */
+import { playbooksRouter }    from './routers/admin/conteudo/playbooks'
+import { marketingRouter }    from './routers/admin/conteudo/marketing'
+
+/* ── Automações ── */
+import { automationsRouter }  from './routers/admin/automacoes/automations'
+import { integrationsRouter } from './routers/admin/automacoes/integrations'
+import { workflowsRouter }    from './routers/admin/automacoes/workflows'
+
+/* ── Portal (client) ── */
 import { dashboardRouter as clientDashboardRouter } from './routers/client/dashboard'
 import { leadsRouter     as clientLeadsRouter }     from './routers/client/leads'
 import { callsRouter     as clientCallsRouter }     from './routers/client/calls'
@@ -19,14 +33,25 @@ import { pipelineRouter  as clientPipelineRouter }  from './routers/client/pipel
 
 export const appRouter = createTRPCRouter({
   admin: createTRPCRouter({
-    trafego:      trafegoRouter,
-    calls:        callsRouter,
-    pipeline:     pipelineRouter,
+    /* CRM */
     leads:        leadsRouter,
     clients:      clientsRouter,
+    pipeline:     pipelineRouter,
+    conversas:    conversasRouter,
+    /* Analytics */
+    trafego:      trafegoRouter,
+    dashboard:    dashboardRouter,
+    /* Operações */
+    calls:        callsRouter,
+    equipa:       equipaRouter,
+    parceiros:    parceirosRouter,
+    /* Conteúdo */
+    playbooks:    playbooksRouter,
+    marketing:    marketingRouter,
+    /* Automações */
     automations:  automationsRouter,
     integrations: integrationsRouter,
-    dashboard:    dashboardRouter,
+    workflows:    workflowsRouter,
   }),
   portal: createTRPCRouter({
     dashboard: clientDashboardRouter,

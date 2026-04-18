@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { createTRPCRouter, agencyProcedure } from '../../trpc'
+import { createTRPCRouter, agencyProcedure } from '../../../trpc'
 
 export const leadsRouter = createTRPCRouter({
   list: agencyProcedure

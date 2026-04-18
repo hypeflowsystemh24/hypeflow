@@ -904,6 +904,228 @@ function AudienceBuilder() {
   )
 }
 
+/* ─── AI Copy Modal (F14) ─── */
+type AICopyObjective = 'aquecer' | 'qualificar' | 'fechar' | 'reactivar' | 'nutrir'
+type AITone = 'profissional' | 'casual' | 'urgente' | 'empatico'
+type AIChannel = 'email' | 'whatsapp' | 'sms'
+
+interface CopyVariant { subject: string; body: string; cta: string }
+
+function AICopyModal({ onClose }: { onClose: () => void }) {
+  const [product, setProduct]     = useState('')
+  const [audience, setAudience]   = useState('Qualificação')
+  const [objective, setObjective] = useState<AICopyObjective>('aquecer')
+  const [tone, setTone]           = useState<AITone>('profissional')
+  const [channel, setChannel]     = useState<AIChannel>('email')
+  const [loading, setLoading]     = useState(false)
+  const [variants, setVariants]   = useState<CopyVariant[]>([])
+  const [copied, setCopied]       = useState<number | null>(null)
+
+  const generate = async () => {
+    if (!product.trim()) return
+    setLoading(true)
+    try {
+      const res = await fetch('/api/ai/copy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product, audience, objective, tone, channel }),
+      })
+      const data = await res.json() as { variants: CopyVariant[] }
+      setVariants(data.variants ?? [])
+    } catch {
+      setVariants([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const copyText = (i: number, v: CopyVariant) => {
+    const text = `${v.subject}\n\n${v.body}\n\n${v.cta}`
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(i)
+      setTimeout(() => setCopied(null), 2000)
+    })
+  }
+
+  const CHANNELS_UI: { id: AIChannel; label: string; color: string }[] = [
+    { id: 'email',    label: 'Email',     color: '#EA4335' },
+    { id: 'whatsapp', label: 'WhatsApp',  color: '#25D366' },
+    { id: 'sms',      label: 'SMS',       color: '#F5A623' },
+  ]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)' }}>
+      <div className="w-full max-w-4xl rounded-2xl flex flex-col overflow-hidden" style={{ background: 'var(--s1)', boxShadow: 'var(--shadow-float)', maxHeight: '90vh' }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between p-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(209,255,0,0.1)' }}>
+              <Zap size={16} style={{ color: '#D1FF00' }} />
+            </div>
+            <div>
+              <p className="font-semibold text-sm" style={{ color: 'var(--t1)' }}>Gerar Copy com IA</p>
+              <p className="text-[11px]" style={{ color: 'var(--t3)' }}>Descreve o produto e a IA cria 3 variantes prontas</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="tonal-hover p-1.5 rounded-lg" style={{ color: 'var(--t3)' }}>
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left — inputs */}
+          <div className="w-72 flex-shrink-0 flex flex-col gap-4 p-5 overflow-y-auto" style={{ borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--t3)' }}>Produto / Serviço *</label>
+              <input
+                value={product}
+                onChange={e => setProduct(e.target.value)}
+                placeholder="Ex: Gestão de tráfego Meta"
+                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+                style={{ background: 'var(--s2)', color: 'var(--t1)', border: '1px solid rgba(255,255,255,0.06)' }}
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--t3)' }}>Canal</label>
+              <div className="flex gap-1.5">
+                {CHANNELS_UI.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => setChannel(c.id)}
+                    className="flex-1 py-1.5 rounded-xl text-[11px] font-bold transition-all"
+                    style={{ background: channel === c.id ? `${c.color}20` : 'var(--s2)', color: channel === c.id ? c.color : 'var(--t3)', border: channel === c.id ? `1px solid ${c.color}40` : '1px solid transparent' }}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--t3)' }}>Fase da Audiência</label>
+              <select
+                value={audience}
+                onChange={e => setAudience(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+                style={{ background: 'var(--s2)', color: 'var(--t1)', border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                {['Novo Lead', 'Qualificação', 'Proposta', 'Negociação', 'Cold'].map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--t3)' }}>Objectivo</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {(['aquecer', 'qualificar', 'fechar', 'reactivar', 'nutrir'] as AICopyObjective[]).map(o => (
+                  <button
+                    key={o}
+                    onClick={() => setObjective(o)}
+                    className="py-1.5 rounded-xl text-[11px] font-semibold capitalize transition-all"
+                    style={{ background: objective === o ? 'rgba(33,160,196,0.15)' : 'var(--s2)', color: objective === o ? 'var(--cyan)' : 'var(--t3)' }}
+                  >
+                    {o.charAt(0).toUpperCase() + o.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--t3)' }}>Tom</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {(['profissional', 'casual', 'urgente', 'empatico'] as AITone[]).map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setTone(t)}
+                    className="py-1.5 rounded-xl text-[11px] font-semibold capitalize transition-all"
+                    style={{ background: tone === t ? 'rgba(209,255,0,0.1)' : 'var(--s2)', color: tone === t ? '#D1FF00' : 'var(--t3)' }}
+                  >
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={generate}
+              disabled={!product.trim() || loading}
+              className="w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all"
+              style={{
+                background: product.trim() && !loading ? 'var(--lime)' : 'var(--s3)',
+                color: product.trim() && !loading ? '#0a0a0a' : 'var(--t3)',
+              }}
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  A gerar...
+                </>
+              ) : (
+                <><Zap size={14} /> Gerar 3 Variantes</>
+              )}
+            </button>
+          </div>
+
+          {/* Right — variants */}
+          <div className="flex-1 overflow-y-auto p-5">
+            {variants.length === 0 && !loading && (
+              <div className="flex flex-col items-center justify-center h-full gap-3 opacity-40">
+                <Zap size={32} style={{ color: 'var(--t3)' }} />
+                <p className="text-sm" style={{ color: 'var(--t3)' }}>Preenche os campos e clica em Gerar</p>
+              </div>
+            )}
+            {loading && (
+              <div className="flex flex-col items-center justify-center h-full gap-4">
+                <div className="w-10 h-10 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(209,255,0,0.3)', borderTopColor: '#D1FF00' }} />
+                <p className="text-sm" style={{ color: 'var(--t2)' }}>A IA está a criar as variantes...</p>
+              </div>
+            )}
+            {!loading && variants.length > 0 && (
+              <div className="flex flex-col gap-4">
+                <p className="text-xs font-semibold" style={{ color: 'var(--t3)' }}>3 VARIANTES GERADAS · Selecciona e edita antes de usar</p>
+                {variants.map((v, i) => (
+                  <div key={i} className="rounded-2xl p-4 flex flex-col gap-3" style={{ background: 'var(--s2)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: 'rgba(33,160,196,0.12)', color: 'var(--cyan)' }}>
+                        Variante {i + 1}
+                      </span>
+                      <button
+                        onClick={() => copyText(i, v)}
+                        className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all"
+                        style={{ background: copied === i ? 'rgba(0,229,160,0.1)' : 'var(--s3)', color: copied === i ? 'var(--success)' : 'var(--t3)' }}
+                      >
+                        {copied === i ? <CheckCircle size={11} /> : <Copy size={11} />}
+                        {copied === i ? 'Copiado!' : 'Copiar'}
+                      </button>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--t3)' }}>
+                        {channel === 'email' ? 'ASSUNTO' : 'GANCHO'}
+                      </p>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--t1)' }}>{v.subject}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--t3)' }}>CORPO</p>
+                      <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--t2)' }}>{v.body}</p>
+                    </div>
+                    <div className="pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--t3)' }}>CTA · </span>
+                      <span className="text-sm font-bold" style={{ color: 'var(--cyan)' }}>{v.cta}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ─── Main Page ─── */
 export default function MarketingPage() {
   const [tab, setTab] = useState<'campaigns' | 'sequences' | 'templates' | 'audiences'>('campaigns')
@@ -911,6 +1133,7 @@ export default function MarketingPage() {
   const [statusFilter, setStatusFilter] = useState<CampaignStatus | 'all'>('all')
   const [showCrossBuilder, setShowCrossBuilder] = useState(false)
   const [crossSequences, setCrossSequences] = useState<CrossChannelSequence[]>(MOCK_CROSS_SEQUENCES)
+  const [showAICopy, setShowAICopy] = useState(false)
 
   const filtered = MOCK_CAMPAIGNS.filter(c => {
     if (typeFilter !== 'all' && c.type !== typeFilter) return false
@@ -933,6 +1156,7 @@ export default function MarketingPage() {
           onSave={seq => setCrossSequences(prev => [seq, ...prev])}
         />
       )}
+      {showAICopy && <AICopyModal onClose={() => setShowAICopy(false)} />}
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -940,9 +1164,18 @@ export default function MarketingPage() {
           <h1 className="page-title">Marketing</h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--t3)' }}>Campanhas de Email, SMS e WhatsApp</p>
         </div>
-        <button className="btn-lime flex items-center gap-2 px-5 py-2.5 rounded-xl">
-          <Plus size={15} /> Nova Campanha
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAICopy(true)}
+            className="flex items-center gap-2 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all tonal-hover"
+            style={{ background: 'rgba(209,255,0,0.1)', color: '#D1FF00', border: '1px solid rgba(209,255,0,0.2)' }}
+          >
+            <Zap size={13} /> Gerar Copy com IA
+          </button>
+          <button className="btn-lime flex items-center gap-2 px-5 py-2.5 rounded-xl">
+            <Plus size={15} /> Nova Campanha
+          </button>
+        </div>
       </div>
 
       {/* KPIs */}

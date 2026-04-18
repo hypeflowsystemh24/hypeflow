@@ -1,0 +1,6 @@
+{
+  "buildCommand": "turbo run build --filter=@hypeflow/app",
+  "outputDirectory": "apps/hypeflow/.next",
+  "installCommand": "npm install",
+  "framework": "nextjs"
+}

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { createTRPCRouter, agencyProcedure } from '../../trpc'
+import { createTRPCRouter, agencyProcedure } from '../../../trpc'
 import { subDays, format } from 'date-fns'
 
 const DateRangeSchema = z.object({

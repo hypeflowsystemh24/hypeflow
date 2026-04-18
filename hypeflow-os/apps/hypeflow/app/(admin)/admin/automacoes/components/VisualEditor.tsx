@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 
 /* ─── Types ─── */
-type NodeType = 'trigger' | 'condition' | 'action' | 'delay' | 'branch' | 'end'
+type NodeType = 'trigger' | 'condition' | 'action' | 'delay' | 'branch' | 'behavior_branch' | 'end'
 
 interface FlowNode {
   id: string
@@ -22,12 +22,13 @@ interface FlowNode {
 
 /* ─── Node config ─── */
 const NODE_CONFIG: Record<NodeType, { color: string; bg: string; icon: React.ElementType; label: string; description: string }> = {
-  trigger:   { color: '#21A0C4', bg: 'rgba(33,160,196,0.12)',   icon: Zap,        label: 'Trigger',   description: 'Evento que inicia o fluxo' },
-  condition: { color: '#F5A623', bg: 'rgba(245,166,35,0.12)',   icon: GitBranch,  label: 'Condição',  description: 'Ramificação condicional IF/ELSE' },
-  action:    { color: '#00E5A0', bg: 'rgba(0,229,160,0.12)',    icon: Play,       label: 'Acção',     description: 'Executa uma acção' },
-  delay:     { color: '#7FA8C4', bg: 'rgba(127,168,196,0.12)', icon: Clock,      label: 'Delay',     description: 'Aguarda um período' },
-  branch:    { color: '#9B59B6', bg: 'rgba(155,89,182,0.12)',   icon: GitBranch,  label: 'Branch',    description: 'Divide o fluxo em caminhos' },
-  end:       { color: '#E84545', bg: 'rgba(232,69,69,0.12)',    icon: StopCircle, label: 'Fim',       description: 'Termina o fluxo' },
+  trigger:         { color: '#21A0C4', bg: 'rgba(33,160,196,0.12)',   icon: Zap,        label: 'Trigger',              description: 'Evento que inicia o fluxo' },
+  condition:       { color: '#F5A623', bg: 'rgba(245,166,35,0.12)',   icon: GitBranch,  label: 'Condição',             description: 'Ramificação condicional IF/ELSE' },
+  action:          { color: '#00E5A0', bg: 'rgba(0,229,160,0.12)',    icon: Play,       label: 'Acção',                description: 'Executa uma acção' },
+  delay:           { color: '#7FA8C4', bg: 'rgba(127,168,196,0.12)', icon: Clock,      label: 'Delay',                description: 'Aguarda um período' },
+  branch:          { color: '#9B59B6', bg: 'rgba(155,89,182,0.12)',   icon: GitBranch,  label: 'Branch',               description: 'Divide o fluxo em caminhos' },
+  behavior_branch: { color: '#D1FF00', bg: 'rgba(209,255,0,0.10)',    icon: Activity,   label: 'Branch Comportamento', description: 'Rotas diferentes por comportamento do lead' },
+  end:             { color: '#E84545', bg: 'rgba(232,69,69,0.12)',    icon: StopCircle, label: 'Fim',                  description: 'Termina o fluxo' },
 }
 
 const TRIGGER_OPTIONS = [
@@ -319,6 +320,59 @@ function FlowNodeCard({
               </div>
             )}
 
+            {/* BEHAVIOR BRANCH config */}
+            {node.type === 'behavior_branch' && (
+              <div className="flex flex-col gap-3">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1.5" style={{ color: 'var(--t3)' }}>Comportamento a detectar</label>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {[
+                      { value: 'opened_email',      label: '📧 Abriu email',               hint: 'Lead abriu a última mensagem de email' },
+                      { value: 'clicked_link',       label: '🔗 Clicou no link',            hint: 'Lead clicou num link enviado' },
+                      { value: 'replied_whatsapp',   label: '💬 Respondeu no WhatsApp',     hint: 'Lead enviou resposta no WhatsApp' },
+                      { value: 'opened_portal',      label: '🌐 Visitou portal',             hint: 'Lead acedeu ao portal do cliente' },
+                      { value: 'no_activity_3d',     label: '😴 Sem actividade 3 dias',     hint: 'Lead não interagiu nos últimos 3 dias' },
+                      { value: 'no_activity_7d',     label: '🧊 Sem actividade 7 dias',     hint: 'Lead fria — sem resposta em 7 dias' },
+                      { value: 'score_dropped',      label: '📉 Score caiu',                hint: 'Score do lead desceu em relação à última avaliação' },
+                      { value: 'temperature_hot',    label: '🔥 Temperatura: HOT',          hint: 'Lead marcado como HOT' },
+                    ].map(o => {
+                      const selected = node.config.behavior === o.value
+                      return (
+                        <button
+                          key={o.value}
+                          onClick={() => onUpdate({ ...node.config, behavior: o.value })}
+                          className="flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-all"
+                          style={{
+                            background: selected ? 'rgba(209,255,0,0.08)' : 'var(--s2)',
+                            border: `1px solid ${selected ? 'rgba(209,255,0,0.3)' : 'transparent'}`,
+                          }}
+                        >
+                          <span className="text-sm leading-none mt-0.5">{o.label.split(' ')[0]}</span>
+                          <div className="flex-1">
+                            <p className="text-xs font-semibold" style={{ color: selected ? '#D1FF00' : 'var(--t1)' }}>
+                              {o.label.slice(o.label.indexOf(' ') + 1)}
+                            </p>
+                            <p className="text-[10px] mt-0.5" style={{ color: 'var(--t3)' }}>{o.hint}</p>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+                {/* Visual branch paths */}
+                <div className="flex gap-2 mt-1">
+                  <div className="flex-1 px-3 py-2 rounded-xl" style={{ background: 'rgba(209,255,0,0.08)', border: '1px solid rgba(209,255,0,0.2)' }}>
+                    <p className="text-[10px] font-bold" style={{ color: '#D1FF00' }}>✓ SIM → caminho A</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--t3)' }}>Comportamento detectado</p>
+                  </div>
+                  <div className="flex-1 px-3 py-2 rounded-xl" style={{ background: 'rgba(127,168,196,0.08)', border: '1px solid rgba(127,168,196,0.2)' }}>
+                    <p className="text-[10px] font-bold" style={{ color: '#7FA8C4' }}>✗ NÃO → caminho B</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--t3)' }}>Sem comportamento</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* END config */}
             {node.type === 'end' && (
               <p className="text-xs text-center py-2" style={{ color: 'var(--t3)' }}>Lead sai do fluxo. Automação concluída.</p>
@@ -340,11 +394,12 @@ function FlowNodeCard({
 /* ─── Add Node Palette ─── */
 function AddNodeMenu({ onAdd, onClose }: { onAdd: (type: NodeType) => void; onClose: () => void }) {
   const options: { type: NodeType; emoji: string; desc: string }[] = [
-    { type: 'action',    emoji: '⚡', desc: 'Executa acção (enviar mensagem, mover etapa...)' },
-    { type: 'delay',     emoji: '⏳', desc: 'Aguarda X tempo antes do próximo passo' },
-    { type: 'condition', emoji: '🔀', desc: 'Ramifica com base em condição (IF/ELSE)' },
-    { type: 'branch',    emoji: '🌿', desc: 'Divide em múltiplos caminhos paralelos' },
-    { type: 'end',       emoji: '🛑', desc: 'Termina este caminho do fluxo' },
+    { type: 'action',          emoji: '⚡', desc: 'Executa acção (enviar mensagem, mover etapa...)' },
+    { type: 'delay',           emoji: '⏳', desc: 'Aguarda X tempo antes do próximo passo' },
+    { type: 'condition',       emoji: '🔀', desc: 'Ramifica com base em condição (IF/ELSE)' },
+    { type: 'behavior_branch', emoji: '🧠', desc: 'Rotas adaptativas por comportamento do lead' },
+    { type: 'branch',          emoji: '🌿', desc: 'Divide em múltiplos caminhos paralelos' },
+    { type: 'end',             emoji: '🛑', desc: 'Termina este caminho do fluxo' },
   ]
 
   return (
@@ -397,6 +452,19 @@ const TEMPLATES: { name: string; icon: string; nodes: Omit<FlowNode, 'id'>[] }[]
     ],
   },
   {
+    name: 'Comportamento Adaptativo',
+    icon: '🧠',
+    nodes: [
+      { type: 'trigger',         label: 'Lead criada',               config: { trigger: 'lead_created' },                                                           expanded: false },
+      { type: 'action',          label: 'Email de boas-vindas',      config: { action: 'send_email', message: 'Olá {nome}, bem-vindo!' },                          expanded: false },
+      { type: 'delay',           label: 'Aguardar 24h',              config: { delay: '24h' },                                                                     expanded: false },
+      { type: 'behavior_branch', label: 'Abriu o email?',            config: { behavior: 'opened_email' },                                                         expanded: false },
+      { type: 'action',          label: 'Caminho A — WhatsApp quente', config: { action: 'send_whatsapp', message: 'Olá {nome}! Vi que leu o nosso email. Podemos falar?' }, expanded: false },
+      { type: 'action',          label: 'Caminho B — Reenvio',       config: { action: 'send_email', message: 'Olá {nome}, perdemos? Aqui está o nosso email novamente.' }, expanded: false },
+      { type: 'end',             label: 'Fim',                       config: {},                                                                                    expanded: false },
+    ],
+  },
+  {
     name: 'Reactivação Pós-Perda',
     icon: '🔄',
     nodes: [
@@ -435,7 +503,8 @@ export function VisualEditor({ onClose, onSave, initialName = '' }: VisualEditor
       condition: { label: 'Nova condição',         config: { field: 'score', op: 'greater_than', value: '50' } },
       action:    { label: 'Nova acção',            config: { action: 'send_whatsapp' } },
       delay:     { label: 'Aguardar',              config: { delay: '24h' } },
-      branch:    { label: 'Novo branch',           config: {} },
+      branch:          { label: 'Novo branch',              config: {} },
+      behavior_branch: { label: 'Branch por Comportamento', config: { behavior: 'opened_email' } },
       end:       { label: 'Fim do fluxo',          config: {} },
     }
     const d = defaults[type]

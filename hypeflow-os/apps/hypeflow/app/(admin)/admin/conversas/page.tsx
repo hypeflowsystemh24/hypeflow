@@ -9,6 +9,8 @@ import {
   ArrowLeft, Plus, X, Bot, Zap,
 } from 'lucide-react'
 
+import { AiPanel } from './components/AiPanel'
+
 /* ─── Types ─── */
 type Channel = 'whatsapp' | 'email' | 'instagram' | 'facebook' | 'sms' | 'chat'
 type Status = 'open' | 'pending' | 'closed'
@@ -304,6 +306,7 @@ export default function ConversasPage() {
   const [search, setSearch] = useState('')
   const [showQuickReplies, setShowQuickReplies] = useState(false)
   const [statusFilter, setStatusFilter] = useState<Status | 'all'>('all')
+  const [showAiPanel, setShowAiPanel] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -451,6 +454,14 @@ export default function ConversasPage() {
               </button>
               <button className="p-2 rounded-xl tonal-hover" style={{ color: 'var(--t2)' }}>
                 <Star size={15} />
+              </button>
+              <button
+                onClick={() => setShowAiPanel(v => !v)}
+                className="p-2 rounded-xl tonal-hover transition-all"
+                style={{ background: showAiPanel ? 'rgba(209,255,0,0.12)' : 'transparent', color: showAiPanel ? '#D1FF00' : 'var(--t2)' }}
+                title="HYPE AI"
+              >
+                <Bot size={15} />
               </button>
               <button className="p-2 rounded-xl tonal-hover" style={{ color: 'var(--t2)' }}>
                 <MoreVertical size={15} />
@@ -623,6 +634,11 @@ export default function ConversasPage() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* ── AI Panel (F13) ── */}
+      {showAiPanel && (
+        <AiPanel conv={activeConv} onClose={() => setShowAiPanel(false)} />
       )}
     </div>
   )

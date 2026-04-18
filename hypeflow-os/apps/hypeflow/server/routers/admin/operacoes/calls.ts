@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { createTRPCRouter, agencyProcedure } from '../../trpc'
+import { createTRPCRouter, agencyProcedure } from '../../../trpc'
 import { differenceInMinutes, addMinutes } from 'date-fns'
 
 const CallOutcomeSchema = z.enum(['advanced', 'lost', 'no_show', 'scheduled_followup'])

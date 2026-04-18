@@ -817,11 +817,191 @@ function TemplateCard({ tpl, onActivate }: { tpl: AutoTemplate; onActivate: (tpl
   )
 }
 
+/* ─────────────────────── AI Studio modal (F01) ─────────────────────── */
+
+const NODE_TIPO_CFG: Record<string, { label: string; color: string; icon: string }> = {
+  trigger:  { label: 'Gatilho',    color: '#00E5A0', icon: '⚡' },
+  condicao: { label: 'Condição',   color: '#F5A623', icon: '🔀' },
+  acao:     { label: 'Acção',      color: '#21A0C4', icon: '▶' },
+  delay:    { label: 'Aguardar',   color: '#7FA8C4', icon: '⏳' },
+  branch:   { label: 'Branch',     color: '#D1FF00', icon: '🌿' },
+  fim:      { label: 'Fim',        color: '#3D5570', icon: '⏹' },
+}
+
+interface AIFlowNode { id: string; tipo: string; config: Record<string, unknown>; next: string[] }
+interface AIFlow { nodes: AIFlowNode[]; nome: string; descricao: string }
+
+function AIStudioModal({ onClose, onImport }: {
+  onClose: () => void
+  onImport: (flow: AIFlow) => void
+}) {
+  const [prompt, setPrompt]   = useState('')
+  const [loading, setLoading] = useState(false)
+  const [flow, setFlow]       = useState<AIFlow | null>(null)
+  const [error, setError]     = useState('')
+
+  const generate = async () => {
+    if (!prompt.trim()) return
+    setLoading(true); setError(''); setFlow(null)
+    try {
+      const res  = await fetch('/api/ai/automation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      })
+      const data = await res.json() as { flow?: AIFlow; error?: string }
+      if (data.flow) setFlow(data.flow)
+      else setError('Não foi possível gerar a automação. Tenta ser mais específico.')
+    } catch {
+      setError('Erro de ligação. Verifica a tua ligação à internet.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const EXAMPLES = [
+    'Quando um lead chega a score 80, enviar WhatsApp e notificar o closer',
+    'Quando lead fica sem resposta há 48h, enviar email e depois SMS',
+    'Quando novo lead chega via Meta, adicionar tag e enviar boas-vindas por WhatsApp',
+  ]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }}>
+      <div className="w-full max-w-3xl rounded-2xl flex flex-col overflow-hidden" style={{ background: 'var(--s1)', boxShadow: 'var(--shadow-float)', maxHeight: '88vh' }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between p-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style={{ background: 'rgba(0,229,160,0.12)' }}>✨</div>
+            <div>
+              <p className="font-semibold text-sm" style={{ color: 'var(--t1)' }}>AI Studio</p>
+              <p className="text-[11px]" style={{ color: 'var(--t3)' }}>Descreve o que queres automatizar — a IA constrói o fluxo</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="tonal-hover p-1.5 rounded-lg" style={{ color: 'var(--t3)' }}>
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
+          {/* Prompt input */}
+          <div>
+            <textarea
+              value={prompt}
+              onChange={e => setPrompt(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) generate() }}
+              rows={3}
+              placeholder="Ex: Quando um lead chega a score 80, enviar WhatsApp de qualificação e, se não responder em 4h, enviar email e notificar o closer"
+              className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none leading-relaxed"
+              style={{ background: 'var(--s2)', color: 'var(--t1)', border: '1px solid rgba(255,255,255,0.08)', caretColor: 'var(--cyan)' }}
+            />
+            <p className="text-[10px] mt-1.5" style={{ color: 'var(--t3)' }}>Cmd+Enter para gerar · Português europeu</p>
+          </div>
+
+          {/* Examples */}
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--t3)' }}>Exemplos rápidos</p>
+            <div className="flex flex-col gap-1.5">
+              {EXAMPLES.map((ex, i) => (
+                <button
+                  key={i}
+                  onClick={() => setPrompt(ex)}
+                  className="text-left text-xs px-3 py-2 rounded-xl transition-all tonal-hover"
+                  style={{ background: 'var(--s2)', color: 'var(--t2)' }}
+                >
+                  "{ex}"
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Generate button */}
+          <button
+            onClick={generate}
+            disabled={!prompt.trim() || loading}
+            className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all"
+            style={{
+              background: prompt.trim() && !loading ? 'var(--success)' : 'var(--s3)',
+              color: prompt.trim() && !loading ? '#0a0a0a' : 'var(--t3)',
+            }}
+          >
+            {loading
+              ? <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> A interpretar...</>
+              : <><Zap size={14} /> Construir Fluxo</>}
+          </button>
+
+          {error && (
+            <div className="px-4 py-3 rounded-xl flex items-center gap-2" style={{ background: 'rgba(232,69,69,0.1)', color: '#E84545' }}>
+              <AlertCircle size={13} />
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
+
+          {/* Flow preview */}
+          {flow && (
+            <div className="flex flex-col gap-4 animate-fade-in">
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: 'var(--t1)' }}>{flow.nome}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--t3)' }}>{flow.descricao}</p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,229,160,0.12)', color: 'var(--success)' }}>
+                    {flow.nodes.length} nós
+                  </span>
+                </div>
+
+                {/* Node chain */}
+                <div className="flex flex-col gap-0">
+                  {flow.nodes.map((node, i) => {
+                    const cfg = NODE_TIPO_CFG[node.tipo] ?? NODE_TIPO_CFG.acao!
+                    const actionLabel = node.config.accao as string | undefined
+                    const gateLabel   = node.config.gatilho as string | undefined
+                    const label = actionLabel ?? gateLabel ?? node.tipo
+                    return (
+                      <div key={node.id}>
+                        <div
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+                          style={{ background: `${cfg.color}10`, border: `1px solid ${cfg.color}25` }}
+                        >
+                          <span className="text-base">{cfg.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: cfg.color }}>{cfg.label}</span>
+                            <p className="text-xs truncate" style={{ color: 'var(--t2)' }}>{label?.replace(/_/g, ' ')}</p>
+                          </div>
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'var(--s3)', color: 'var(--t3)' }}>{node.id}</span>
+                        </div>
+                        {i < flow.nodes.length - 1 && (
+                          <div className="flex justify-center my-0.5">
+                            <div className="w-0.5 h-4" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <button
+                onClick={() => { onImport(flow); onClose() }}
+                className="w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all btn-lime"
+              >
+                <Check size={14} /> Importar para o Editor
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ─────────────────────── main page ─────────────────────── */
 
 export default function AutomacoesPage() {
   const [showBuilder, setShowBuilder]       = useState(false)
   const [showVisualEditor, setShowVisualEditor] = useState(false)
+  const [showAIStudio, setShowAIStudio]     = useState(false)
   const [selectedAuto, setSelectedAuto]     = useState<Automation | null>(null)
   const [statusFilter, setStatusFilter]     = useState<AutoStatus | 'all'>('all')
   const [automations, setAutomations]       = useState<Automation[]>(MOCK_AUTOMATIONS)
@@ -881,6 +1061,30 @@ export default function AutomacoesPage() {
   return (
     <>
       {showBuilder && <BuilderModal onClose={() => setShowBuilder(false)} onSave={handleSaveAutomation} />}
+      {showAIStudio && (
+        <AIStudioModal
+          onClose={() => setShowAIStudio(false)}
+          onImport={(flow) => {
+            const newAuto: Automation = {
+              id: `a${Date.now()}`,
+              name: flow.nome,
+              trigger: (flow.nodes.find(n => n.tipo === 'trigger')?.config.gatilho as TriggerType) ?? 'lead_created',
+              conditions: [],
+              actions: flow.nodes
+                .filter(n => n.tipo === 'acao')
+                .map((n, i) => ({
+                  id: `ac${Date.now()}${i}`,
+                  type: (n.config.accao as ActionType) ?? 'notify_agent',
+                  params: {},
+                })),
+              status: 'draft',
+              runs_total: 0, runs_today: 0, last_run: null,
+              created_at: new Date().toISOString().slice(0, 10),
+            }
+            handleSaveAutomation(newAuto)
+          }}
+        />
+      )}
 
       <div className="flex h-full gap-0">
         {/* Main */}
@@ -892,6 +1096,13 @@ export default function AutomacoesPage() {
               <p className="text-sm text-[#7FA8C4] mt-0.5">{active} activas · {totalRuns} runs hoje</p>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowAIStudio(true)}
+                className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl transition-all"
+                style={{ background: 'rgba(0,229,160,0.1)', color: 'var(--success)', border: '1px solid rgba(0,229,160,0.2)' }}
+              >
+                <Zap size={13} /> Criar com IA
+              </button>
               <button
                 onClick={() => setShowVisualEditor(true)}
                 className="flex items-center gap-2 text-xs font-700 text-[#7FA8C4] border border-white/10 px-4 py-2 rounded-xl hover:border-[#21A0C4] hover:text-white transition-colors"

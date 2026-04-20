@@ -10,9 +10,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'API key em falta' }, { status: 400 })
   }
 
-  const dest      = to         ?? 'test@hypeflow.pt'
+  const dest      = to         ?? from_email ?? 'test@hypeflow.pt'
   const fromName  = from_name  ?? 'HYPE Flow'
-  const fromAddr  = from_email ?? 'noreply@hypeflow.pt'
+  /* Use Resend's default domain for testing — custom domains require verification */
+  const fromAddr  = 'onboarding@resend.dev'
 
   const html = `
     <div style="font-family:sans-serif;max-width:480px;margin:40px auto;background:#141B24;border-radius:16px;overflow:hidden">

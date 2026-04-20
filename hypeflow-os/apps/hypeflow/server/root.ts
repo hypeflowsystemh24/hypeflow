@@ -23,6 +23,7 @@ import { marketingRouter }    from './routers/admin/conteudo/marketing'
 import { automationsRouter }  from './routers/admin/automacoes/automations'
 import { integrationsRouter } from './routers/admin/automacoes/integrations'
 import { workflowsRouter }    from './routers/admin/automacoes/workflows'
+import { settingsRouter }     from './routers/admin/automacoes/settings'
 
 /* ── Portal (client) ── */
 import { dashboardRouter as clientDashboardRouter } from './routers/client/dashboard'
@@ -52,6 +53,7 @@ export const appRouter = createTRPCRouter({
     automations:  automationsRouter,
     integrations: integrationsRouter,
     workflows:    workflowsRouter,
+    settings:     settingsRouter,
   }),
   portal: createTRPCRouter({
     dashboard: clientDashboardRouter,

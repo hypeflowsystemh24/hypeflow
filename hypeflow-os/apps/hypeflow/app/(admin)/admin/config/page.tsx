@@ -5,14 +5,15 @@ import {
   Check, AlertCircle, RefreshCw, ExternalLink, X, Settings,
   Webhook, Globe, Code, Tag, Link2, Copy, Plus, Zap,
   Eye, BarChart2, Target, Activity, ChevronRight, CheckCircle2,
-  XCircle, Clock, Users, TrendingUp, Calendar,
+  XCircle, Clock, Users, TrendingUp, Calendar, Mail, MessageSquare,
+  ChevronLeft, Loader2,
 } from 'lucide-react'
 import { PlatformIcon } from '@/components/icons/PlatformIcons'
 
 /* ─────────────────────── types ─────────────────────── */
 
 type IntegrationStatus = 'connected' | 'disconnected' | 'error'
-type ConfigTab = 'integracoes' | 'pixels' | 'utms'
+type ConfigTab = 'integracoes' | 'pixels' | 'utms' | 'canais'
 
 interface Integration {
   id: string
@@ -177,11 +178,718 @@ function buildUTMUrl(tpl: UTMTemplate, baseUrl = 'https://landing.hypeflow.pt') 
   return `${baseUrl}?${params.toString()}`
 }
 
+/* ─────────────────────── shared wizard UI ─────────────────────── */
+
+function StepCircle({ n, active, done }: { n: number; active: boolean; done: boolean }) {
+  return (
+    <div
+      className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-all"
+      style={{
+        background: done ? '#1EC87A' : active ? 'var(--cyan)' : 'var(--s3)',
+        color: done || active ? '#0F1318' : 'var(--t3)',
+      }}
+    >
+      {done ? <Check size={14} /> : n}
+    </div>
+  )
+}
+
+function CopyBox({ value, label }: { value: string; label?: string }) {
+  const [copied, setCopied] = useState(false)
+  const copy = () => {
+    navigator.clipboard.writeText(value).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <div>
+      {label && <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--t3)' }}>{label}</p>}
+      <div className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: 'var(--s1)' }}>
+        <p className="text-xs font-mono flex-1 break-all" style={{ color: 'var(--t2)' }}>{value}</p>
+        <button
+          onClick={copy}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold flex-shrink-0 transition-all"
+          style={{ background: copied ? '#1EC87A20' : 'var(--s3)', color: copied ? '#1EC87A' : 'var(--t2)' }}
+        >
+          {copied ? <Check size={10} /> : <Copy size={10} />}
+          {copied ? 'Copiado!' : 'Copiar'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ExternalBtn({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-80"
+      style={{ background: 'var(--s3)', color: 'var(--cyan)' }}
+    >
+      {children}
+      <ExternalLink size={11} />
+    </a>
+  )
+}
+
+function WizardField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--t3)' }}>{label}</label>
+      {children}
+    </div>
+  )
+}
+
+function WizardInput({ value, onChange, placeholder, type = 'text' }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; type?: string
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full rounded-xl px-3 py-2.5 text-xs outline-none"
+      style={{ background: 'var(--s1)', color: 'var(--t1)', caretColor: 'var(--cyan)' }}
+    />
+  )
+}
+
+function InfoBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl p-3 text-xs leading-relaxed" style={{ background: 'rgba(33,160,196,0.08)', color: 'var(--t2)', border: '1px solid rgba(33,160,196,0.15)' }}>
+      {children}
+    </div>
+  )
+}
+
+function SuccessScreen({ icon, title, subtitle, onBack }: {
+  icon: string; title: string; subtitle: string; onBack: () => void
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-5 py-10">
+      <div className="text-6xl">{icon}</div>
+      <div className="text-center">
+        <p className="text-xl font-bold" style={{ color: 'var(--t1)' }}>{title}</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--t2)' }}>{subtitle}</p>
+      </div>
+      <button
+        onClick={onBack}
+        className="px-6 py-2.5 rounded-xl text-sm font-bold transition-opacity hover:opacity-80"
+        style={{ background: 'var(--s3)', color: 'var(--t2)' }}
+      >
+        Voltar às integrações
+      </button>
+    </div>
+  )
+}
+
+/* ─────────────────────── email wizard ─────────────────────── */
+
+function EmailWizard({ onBack }: { onBack: () => void }) {
+  const [step, setStep] = useState(1)
+  const [apiKey, setApiKey] = useState('')
+  const [fromEmail, setFromEmail] = useState('')
+  const [fromName, setFromName] = useState('')
+  const [testEmail, setTestEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [done, setDone] = useState(false)
+
+  const handleConnect = async () => {
+    if (!apiKey || !fromEmail) { setError('Preenche a API Key e o email do remetente.'); return }
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/email/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: apiKey, from_email: fromEmail, from_name: fromName, test_email: testEmail || undefined }),
+      })
+      const data = await res.json()
+      if (!data.ok) { setError(data.error ?? 'Erro desconhecido'); return }
+
+      /* Save config */
+      await fetch('/api/settings/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'email_config', value: { api_key: apiKey, from_email: fromEmail, from_name: fromName } }),
+      }).catch(() => {})
+
+      setDone(true)
+    } catch {
+      setError('Não foi possível ligar. Verifica a tua ligação à internet.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (done) return <SuccessScreen icon="🎉" title="Email ligado com sucesso!" subtitle="Podes agora enviar emails automáticos a partir dos teus workflows." onBack={onBack} />
+
+  return (
+    <div className="max-w-lg mx-auto flex flex-col gap-6">
+      {/* Back */}
+      <button onClick={onBack} className="flex items-center gap-1.5 text-xs w-fit transition-opacity hover:opacity-70" style={{ color: 'var(--t3)' }}>
+        <ChevronLeft size={13} /> Voltar
+      </button>
+
+      {/* Title */}
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style={{ background: 'rgba(33,160,196,0.1)' }}>📧</div>
+        <div>
+          <h2 className="text-lg font-bold" style={{ color: 'var(--t1)' }}>Ligar Email</h2>
+          <p className="text-xs" style={{ color: 'var(--t2)' }}>Passo {step} de 3 — demora menos de 5 minutos!</p>
+        </div>
+      </div>
+
+      {/* Steps indicator */}
+      <div className="flex items-center gap-2">
+        {[1,2,3].map((n, i) => (
+          <div key={n} className="flex items-center gap-2">
+            <StepCircle n={n} active={step === n} done={step > n} />
+            {i < 2 && <div className="flex-1 h-0.5 w-8 rounded-full" style={{ background: step > n ? '#1EC87A' : 'var(--s3)' }} />}
+          </div>
+        ))}
+        <p className="ml-2 text-xs" style={{ color: 'var(--t3)' }}>
+          {step === 1 ? 'Criar conta Resend' : step === 2 ? 'Copiar chave API' : 'Testar e ligar'}
+        </p>
+      </div>
+
+      {/* Step content */}
+      {step === 1 && (
+        <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: 'var(--s2)' }}>
+          <p className="font-semibold text-sm" style={{ color: 'var(--t1)' }}>Passo 1 — Criar conta no Resend (gratuito!)</p>
+          <InfoBox>
+            O Resend é o serviço que vai enviar os emails. Tem plano gratuito com 3.000 emails/mês.
+            Se já tens conta, podes saltar este passo.
+          </InfoBox>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3 rounded-xl p-3" style={{ background: 'var(--s1)' }}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: 'var(--cyan)', color: '#0F1318' }}>1</div>
+              <p className="text-xs" style={{ color: 'var(--t2)' }}>Clica no botão abaixo para abrir o site do Resend</p>
+            </div>
+            <div className="flex items-center gap-3 rounded-xl p-3" style={{ background: 'var(--s1)' }}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: 'var(--cyan)', color: '#0F1318' }}>2</div>
+              <p className="text-xs" style={{ color: 'var(--t2)' }}>Clica em <strong style={{ color: 'var(--t1)' }}>"Sign Up"</strong> e cria a tua conta (pode usar Google)</p>
+            </div>
+            <div className="flex items-center gap-3 rounded-xl p-3" style={{ background: 'var(--s1)' }}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: 'var(--cyan)', color: '#0F1318' }}>3</div>
+              <p className="text-xs" style={{ color: 'var(--t2)' }}>Volta aqui e clica em <strong style={{ color: 'var(--t1)' }}>"Já tenho conta"</strong></p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <ExternalBtn href="https://resend.com/signup">Abrir Resend.com</ExternalBtn>
+            <button
+              onClick={() => setStep(2)}
+              className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-opacity hover:opacity-80"
+              style={{ background: 'var(--cyan)', color: '#0F1318' }}
+            >
+              Já tenho conta →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: 'var(--s2)' }}>
+          <p className="font-semibold text-sm" style={{ color: 'var(--t1)' }}>Passo 2 — Copiar a tua chave API</p>
+          <InfoBox>
+            A chave API é como uma senha secreta que permite ao HYPE Flow enviar emails na tua conta.
+            Vai estar no dashboard do Resend em "API Keys".
+          </InfoBox>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3 rounded-xl p-3" style={{ background: 'var(--s1)' }}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: 'var(--cyan)', color: '#0F1318' }}>1</div>
+              <p className="text-xs" style={{ color: 'var(--t2)' }}>No Resend, vai a <strong style={{ color: 'var(--t1)' }}>API Keys</strong> no menu lateral</p>
+            </div>
+            <div className="flex items-center gap-3 rounded-xl p-3" style={{ background: 'var(--s1)' }}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: 'var(--cyan)', color: '#0F1318' }}>2</div>
+              <p className="text-xs" style={{ color: 'var(--t2)' }}>Clica em <strong style={{ color: 'var(--t1)' }}>"+ Create API Key"</strong></p>
+            </div>
+            <div className="flex items-center gap-3 rounded-xl p-3" style={{ background: 'var(--s1)' }}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: 'var(--cyan)', color: '#0F1318' }}>3</div>
+              <p className="text-xs" style={{ color: 'var(--t2)' }}>Copia a chave que começa com <strong style={{ color: 'var(--t1)' }}>re_</strong> e cola abaixo</p>
+            </div>
+          </div>
+          <WizardField label="API Key do Resend">
+            <WizardInput value={apiKey} onChange={setApiKey} placeholder="re_xxxxxxxxxxxxxxxxxxxxxxxx" type="password" />
+          </WizardField>
+          <WizardField label="Email do remetente">
+            <WizardInput value={fromEmail} onChange={setFromEmail} placeholder="noreply@tua-empresa.com" />
+          </WizardField>
+          <WizardField label="Nome do remetente (opcional)">
+            <WizardInput value={fromName} onChange={setFromName} placeholder="HYPE Flow" />
+          </WizardField>
+          <div className="flex gap-3">
+            <button onClick={() => setStep(1)} className="px-4 py-2.5 rounded-xl text-sm transition-opacity hover:opacity-70" style={{ background: 'var(--s3)', color: 'var(--t2)' }}>
+              ← Voltar
+            </button>
+            <button
+              onClick={() => { if (!apiKey || !fromEmail) { setError('Preenche a API Key e o email.'); return }; setError(''); setStep(3) }}
+              className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-opacity hover:opacity-80"
+              style={{ background: 'var(--cyan)', color: '#0F1318' }}
+            >
+              Continuar →
+            </button>
+          </div>
+          {error && <p className="text-xs text-center" style={{ color: 'var(--danger)' }}>{error}</p>}
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: 'var(--s2)' }}>
+          <p className="font-semibold text-sm" style={{ color: 'var(--t1)' }}>Passo 3 — Testar e activar</p>
+          <InfoBox>
+            Opcional: introduz o teu email para receber uma mensagem de teste e confirmar que tudo funciona.
+          </InfoBox>
+          <WizardField label="Email de teste (opcional)">
+            <WizardInput value={testEmail} onChange={setTestEmail} placeholder="o-teu-email@exemplo.com" />
+          </WizardField>
+          <div className="flex gap-3">
+            <button onClick={() => setStep(2)} className="px-4 py-2.5 rounded-xl text-sm transition-opacity hover:opacity-70" style={{ background: 'var(--s3)', color: 'var(--t2)' }}>
+              ← Voltar
+            </button>
+            <button
+              onClick={handleConnect}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-opacity hover:opacity-80 disabled:opacity-50"
+              style={{ background: '#1EC87A', color: '#0F1318' }}
+            >
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              {loading ? 'A ligar...' : '✅ Ligar Email'}
+            </button>
+          </div>
+          {error && (
+            <div className="rounded-xl px-3 py-2.5 flex items-start gap-2" style={{ background: 'rgba(232,69,69,0.08)', border: '1px solid rgba(232,69,69,0.2)' }}>
+              <AlertCircle size={12} style={{ color: 'var(--danger)', flexShrink: 0, marginTop: 1 }} />
+              <p className="text-xs" style={{ color: 'var(--danger)' }}>{error}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─────────────────────── whatsapp wizard ─────────────────────── */
+
+const WA_WEBHOOK_URL = 'https://hypeflow.vercel.app/api/webhooks/whatsapp'
+const WA_VERIFY_TOKEN = 'hypeflow-webhook-verify'
+
+function WhatsappWizard({ onBack }: { onBack: () => void }) {
+  const [step, setStep] = useState(1)
+  const [accessToken, setAccessToken] = useState('')
+  const [phoneNumberId, setPhoneNumberId] = useState('')
+  const [testNumber, setTestNumber] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [done, setDone] = useState(false)
+
+  const handleConnect = async () => {
+    if (!accessToken || !phoneNumberId) { setError('Preenche o Access Token e o Phone Number ID.'); return }
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/whatsapp/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: accessToken, phone_number_id: phoneNumberId, test_number: testNumber || undefined }),
+      })
+      const data = await res.json()
+      if (!data.ok) { setError(data.error ?? 'Credenciais inválidas'); return }
+
+      await fetch('/api/settings/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'whatsapp_config', value: { access_token: accessToken, phone_number_id: phoneNumberId } }),
+      }).catch(() => {})
+
+      setDone(true)
+    } catch {
+      setError('Não foi possível ligar. Verifica a tua ligação à internet.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (done) return <SuccessScreen icon="🎉" title="WhatsApp ligado com sucesso!" subtitle="Já podes enviar mensagens automáticas via WhatsApp Business." onBack={onBack} />
+
+  return (
+    <div className="max-w-lg mx-auto flex flex-col gap-6">
+      <button onClick={onBack} className="flex items-center gap-1.5 text-xs w-fit transition-opacity hover:opacity-70" style={{ color: 'var(--t3)' }}>
+        <ChevronLeft size={13} /> Voltar
+      </button>
+
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style={{ background: 'rgba(30,200,122,0.1)' }}>💬</div>
+        <div>
+          <h2 className="text-lg font-bold" style={{ color: 'var(--t1)' }}>Ligar WhatsApp</h2>
+          <p className="text-xs" style={{ color: 'var(--t2)' }}>Passo {step} de 4 — segue as instruções!</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {[1,2,3,4].map((n, i) => (
+          <div key={n} className="flex items-center gap-2">
+            <StepCircle n={n} active={step === n} done={step > n} />
+            {i < 3 && <div className="flex-1 h-0.5 w-6 rounded-full" style={{ background: step > n ? '#1EC87A' : 'var(--s3)' }} />}
+          </div>
+        ))}
+        <p className="ml-2 text-xs" style={{ color: 'var(--t3)' }}>
+          {step === 1 ? 'Criar app Meta' : step === 2 ? 'Copiar credenciais' : step === 3 ? 'Configurar webhook' : 'Testar e ligar'}
+        </p>
+      </div>
+
+      {step === 1 && (
+        <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: 'var(--s2)' }}>
+          <p className="font-semibold text-sm" style={{ color: 'var(--t1)' }}>Passo 1 — Criar App no Meta Developers</p>
+          <InfoBox>
+            O WhatsApp Business API funciona através do Meta (Facebook). Precisas de criar uma "App" gratuita para obter as chaves de acesso.
+          </InfoBox>
+          <div className="flex flex-col gap-3">
+            {[
+              'Clica no botão abaixo para abrir o Meta Developers',
+              'Faz login com a tua conta do Facebook',
+              'Clica em "Criar App" → escolhe "Business"',
+              'Dá um nome à app (ex: "HYPE Flow WA")',
+              'No painel da app, clica em "WhatsApp" → "Configurar"',
+            ].map((txt, i) => (
+              <div key={i} className="flex items-start gap-3 rounded-xl p-3" style={{ background: 'var(--s1)' }}>
+                <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" style={{ background: 'rgba(30,200,122,0.2)', color: '#1EC87A' }}>{i+1}</div>
+                <p className="text-xs" style={{ color: 'var(--t2)' }}>{txt}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-3">
+            <ExternalBtn href="https://developers.facebook.com/apps">Abrir Meta Developers</ExternalBtn>
+            <button onClick={() => setStep(2)} className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-opacity hover:opacity-80" style={{ background: '#1EC87A', color: '#0F1318' }}>
+              Já criei a app →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: 'var(--s2)' }}>
+          <p className="font-semibold text-sm" style={{ color: 'var(--t1)' }}>Passo 2 — Copiar as credenciais</p>
+          <InfoBox>
+            Dentro da tua App Meta, na secção do WhatsApp, vais encontrar estas duas informações importantes.
+          </InfoBox>
+          <div className="flex flex-col gap-3 mb-1">
+            <div className="rounded-xl p-3 flex flex-col gap-1" style={{ background: 'var(--s1)' }}>
+              <p className="text-xs font-semibold" style={{ color: 'var(--t1)' }}>🔑 Access Token temporário</p>
+              <p className="text-[11px]" style={{ color: 'var(--t3)' }}>Em "WhatsApp" → "API Setup" → copia o "Temporary access token"</p>
+            </div>
+            <div className="rounded-xl p-3 flex flex-col gap-1" style={{ background: 'var(--s1)' }}>
+              <p className="text-xs font-semibold" style={{ color: 'var(--t1)' }}>📱 Phone Number ID</p>
+              <p className="text-[11px]" style={{ color: 'var(--t3)' }}>Na mesma página, copia o "Phone number ID" (é um número longo)</p>
+            </div>
+          </div>
+          <WizardField label="Access Token">
+            <WizardInput value={accessToken} onChange={setAccessToken} placeholder="EAAxxxxxxxxxxxxxxxx..." type="password" />
+          </WizardField>
+          <WizardField label="Phone Number ID">
+            <WizardInput value={phoneNumberId} onChange={setPhoneNumberId} placeholder="1234567890123456" />
+          </WizardField>
+          <div className="flex gap-3">
+            <button onClick={() => setStep(1)} className="px-4 py-2.5 rounded-xl text-sm transition-opacity hover:opacity-70" style={{ background: 'var(--s3)', color: 'var(--t2)' }}>← Voltar</button>
+            <button
+              onClick={() => { if (!accessToken || !phoneNumberId) { setError('Preenche os dois campos.'); return }; setError(''); setStep(3) }}
+              className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-opacity hover:opacity-80"
+              style={{ background: '#1EC87A', color: '#0F1318' }}
+            >
+              Continuar →
+            </button>
+          </div>
+          {error && <p className="text-xs text-center" style={{ color: 'var(--danger)' }}>{error}</p>}
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: 'var(--s2)' }}>
+          <p className="font-semibold text-sm" style={{ color: 'var(--t1)' }}>Passo 3 — Configurar o Webhook</p>
+          <InfoBox>
+            O Webhook permite que o WhatsApp envie mensagens recebidas para o HYPE Flow em tempo real.
+            Copia os dois valores abaixo e cola no painel Meta.
+          </InfoBox>
+          <div className="flex flex-col gap-3">
+            <div className="rounded-xl p-3 flex flex-col gap-1" style={{ background: 'var(--s1)' }}>
+              <p className="text-[11px]" style={{ color: 'var(--t3)' }}>No Meta, vai a <strong style={{ color: 'var(--t1)' }}>WhatsApp → Configuration → Webhooks</strong> e clica <strong style={{ color: 'var(--t1)' }}>"Edit"</strong></p>
+            </div>
+          </div>
+          <CopyBox value={WA_WEBHOOK_URL} label="URL do Webhook — cola no campo 'Callback URL'" />
+          <CopyBox value={WA_VERIFY_TOKEN} label="Token de Verificação — cola no campo 'Verify token'" />
+          <InfoBox>
+            Depois de colar os dois valores, clica em <strong style={{ color: 'var(--t1)' }}>"Verify and Save"</strong> no Meta.
+            Se der erro, verifica se o URL está correcto.
+          </InfoBox>
+          <div className="flex gap-3">
+            <button onClick={() => setStep(2)} className="px-4 py-2.5 rounded-xl text-sm transition-opacity hover:opacity-70" style={{ background: 'var(--s3)', color: 'var(--t2)' }}>← Voltar</button>
+            <button onClick={() => setStep(4)} className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-opacity hover:opacity-80" style={{ background: '#1EC87A', color: '#0F1318' }}>
+              Já configurei →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 4 && (
+        <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: 'var(--s2)' }}>
+          <p className="font-semibold text-sm" style={{ color: 'var(--t1)' }}>Passo 4 — Testar e activar</p>
+          <InfoBox>
+            Opcional: introduz um número de telemóvel para receber uma mensagem de confirmação.
+            O número deve estar registado na sandbox Meta (ou ser o número do WhatsApp da tua conta).
+          </InfoBox>
+          <WizardField label="Número de teste com código de país (opcional)">
+            <WizardInput value={testNumber} onChange={setTestNumber} placeholder="351912345678" />
+          </WizardField>
+          <div className="flex gap-3">
+            <button onClick={() => setStep(3)} className="px-4 py-2.5 rounded-xl text-sm transition-opacity hover:opacity-70" style={{ background: 'var(--s3)', color: 'var(--t2)' }}>← Voltar</button>
+            <button
+              onClick={handleConnect}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-opacity hover:opacity-80 disabled:opacity-50"
+              style={{ background: '#1EC87A', color: '#0F1318' }}
+            >
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              {loading ? 'A ligar...' : '✅ Ligar WhatsApp'}
+            </button>
+          </div>
+          {error && (
+            <div className="rounded-xl px-3 py-2.5 flex items-start gap-2" style={{ background: 'rgba(232,69,69,0.08)', border: '1px solid rgba(232,69,69,0.2)' }}>
+              <AlertCircle size={12} style={{ color: 'var(--danger)', flexShrink: 0, marginTop: 1 }} />
+              <p className="text-xs" style={{ color: 'var(--danger)' }}>{error}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─────────────────────── google calendar wizard ─────────────────────── */
+
+function GoogleCalendarWizard({ onBack }: { onBack: () => void }) {
+  const [step, setStep] = useState(1)
+  const [done, setDone] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const handleOAuth = () => {
+    setLoading(true)
+    window.location.href = '/api/oauth/google/connect?scope=calendar'
+  }
+
+  const vercelUrl = typeof window !== 'undefined' ? window.location.origin : 'https://hypeflow.vercel.app'
+
+  if (done) return <SuccessScreen icon="📅" title="Google Calendar ligado!" subtitle="As calls são agora sincronizadas automaticamente com o teu Google Calendar." onBack={onBack} />
+
+  return (
+    <div className="max-w-lg mx-auto flex flex-col gap-6">
+      <button onClick={onBack} className="flex items-center gap-1.5 text-xs w-fit transition-opacity hover:opacity-70" style={{ color: 'var(--t3)' }}>
+        <ChevronLeft size={13} /> Voltar
+      </button>
+
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style={{ background: 'rgba(245,166,35,0.1)' }}>📅</div>
+        <div>
+          <h2 className="text-lg font-bold" style={{ color: 'var(--t1)' }}>Ligar Google Calendar</h2>
+          <p className="text-xs" style={{ color: 'var(--t2)' }}>Passo {step} de 3 — vais precisar de uma conta Google</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {[1,2,3].map((n, i) => (
+          <div key={n} className="flex items-center gap-2">
+            <StepCircle n={n} active={step === n} done={step > n} />
+            {i < 2 && <div className="flex-1 h-0.5 w-8 rounded-full" style={{ background: step > n ? '#F5A623' : 'var(--s3)' }} />}
+          </div>
+        ))}
+        <p className="ml-2 text-xs" style={{ color: 'var(--t3)' }}>
+          {step === 1 ? 'Activar API Google' : step === 2 ? 'Configurar Vercel' : 'Ligar com Google'}
+        </p>
+      </div>
+
+      {step === 1 && (
+        <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: 'var(--s2)' }}>
+          <p className="font-semibold text-sm" style={{ color: 'var(--t1)' }}>Passo 1 — Activar a API do Google Calendar</p>
+          <InfoBox>
+            Precisas de activar a Calendar API no Google Cloud para que o HYPE Flow possa ler e escrever eventos no teu calendário.
+          </InfoBox>
+          <div className="flex flex-col gap-3">
+            {[
+              { n: 1, text: 'Clica abaixo para abrir o Google Cloud Console' },
+              { n: 2, text: 'Cria um projecto novo (botão "New Project" no topo)' },
+              { n: 3, text: 'No menu lateral vai a "APIs & Services" → "Library"' },
+              { n: 4, text: 'Pesquisa "Google Calendar API" e clica "Enable"' },
+              { n: 5, text: 'Vai a "APIs & Services" → "OAuth consent screen" → configura para "External"' },
+              { n: 6, text: 'Vai a "Credentials" → "Create Credentials" → "OAuth Client ID" → tipo "Web application"' },
+            ].map(({ n, text }) => (
+              <div key={n} className="flex items-start gap-3 rounded-xl p-3" style={{ background: 'var(--s1)' }}>
+                <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" style={{ background: 'rgba(245,166,35,0.2)', color: '#F5A623' }}>{n}</div>
+                <p className="text-xs" style={{ color: 'var(--t2)' }}>{text}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-3">
+            <ExternalBtn href="https://console.cloud.google.com">Abrir Google Cloud Console</ExternalBtn>
+            <button onClick={() => setStep(2)} className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-opacity hover:opacity-80" style={{ background: '#F5A623', color: '#0F1318' }}>
+              Já activei →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: 'var(--s2)' }}>
+          <p className="font-semibold text-sm" style={{ color: 'var(--t1)' }}>Passo 2 — Adicionar variáveis no Vercel</p>
+          <InfoBox>
+            Copia as credenciais que criaste no Google Cloud (Client ID e Client Secret) e adiciona-as no Vercel.
+            Estas variáveis permitem que o HYPE Flow faça login com Google de forma segura.
+          </InfoBox>
+          <div className="flex flex-col gap-3">
+            <div className="rounded-xl p-3" style={{ background: 'var(--s1)' }}>
+              <p className="text-[11px]" style={{ color: 'var(--t3)' }}>No Google Cloud, em "Credentials", abre o OAuth Client que criaste e copia o Client ID e Client Secret</p>
+            </div>
+            <div className="rounded-xl p-3" style={{ background: 'var(--s1)' }}>
+              <p className="text-[11px]" style={{ color: 'var(--t3)' }}>Nas configurações do OAuth, em "Authorised redirect URIs", adiciona:</p>
+              <p className="text-[10px] font-mono mt-1" style={{ color: 'var(--cyan)' }}>{vercelUrl}/api/oauth/google/callback</p>
+            </div>
+          </div>
+          <CopyBox value="GOOGLE_CLIENT_ID" label="Nome da variável no Vercel" />
+          <CopyBox value="GOOGLE_CLIENT_SECRET" label="Nome da variável no Vercel" />
+          <CopyBox value="GOOGLE_REDIRECT_URI" label="Nome da variável no Vercel" />
+          <div className="flex gap-3">
+            <ExternalBtn href="https://vercel.com/dashboard">Abrir Vercel Settings</ExternalBtn>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => setStep(1)} className="px-4 py-2.5 rounded-xl text-sm transition-opacity hover:opacity-70" style={{ background: 'var(--s3)', color: 'var(--t2)' }}>← Voltar</button>
+            <button onClick={() => setStep(3)} className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-opacity hover:opacity-80" style={{ background: '#F5A623', color: '#0F1318' }}>
+              Já adicionei →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: 'var(--s2)' }}>
+          <p className="font-semibold text-sm" style={{ color: 'var(--t1)' }}>Passo 3 — Ligar com a tua conta Google</p>
+          <InfoBox>
+            Clica no botão abaixo para abrir a janela de login da Google. Aceita as permissões pedidas para acesso ao Calendar.
+            Serás redirecionado de volta automaticamente.
+          </InfoBox>
+          <div className="rounded-xl p-4 flex flex-col items-center gap-3 text-center" style={{ background: 'var(--s1)' }}>
+            <span className="text-3xl">🔐</span>
+            <p className="text-xs" style={{ color: 'var(--t2)' }}>O HYPE Flow vai pedir permissão para <strong style={{ color: 'var(--t1)' }}>ler e criar eventos</strong> no teu Google Calendar. As tuas informações estão seguras.</p>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => setStep(2)} className="px-4 py-2.5 rounded-xl text-sm transition-opacity hover:opacity-70" style={{ background: 'var(--s3)', color: 'var(--t2)' }}>← Voltar</button>
+            <button
+              onClick={handleOAuth}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-opacity hover:opacity-80 disabled:opacity-50"
+              style={{ background: '#F5A623', color: '#0F1318' }}
+            >
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <span>🗓️</span>}
+              {loading ? 'A redirecionar...' : 'Ligar com Google Calendar'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─────────────────────── channels hub ─────────────────────── */
+
+type ChannelView = 'hub' | 'email' | 'whatsapp' | 'calendar'
+
+function CanaisTab() {
+  const [view, setView] = useState<ChannelView>('hub')
+
+  if (view === 'email')    return <EmailWizard onBack={() => setView('hub')} />
+  if (view === 'whatsapp') return <WhatsappWizard onBack={() => setView('hub')} />
+  if (view === 'calendar') return <GoogleCalendarWizard onBack={() => setView('hub')} />
+
+  const CHANNELS = [
+    {
+      id: 'email' as ChannelView,
+      icon: '📧',
+      name: 'Email',
+      description: 'Envia emails automáticos para leads e clientes. Confirmações, follow-ups, newsletters.',
+      color: 'var(--cyan)',
+      bg: 'rgba(33,160,196,0.1)',
+      badge: 'Resend',
+      time: '5 min',
+    },
+    {
+      id: 'whatsapp' as ChannelView,
+      icon: '💬',
+      name: 'WhatsApp',
+      description: 'Mensagens automáticas no WhatsApp. Notificações, lembretes, follow-ups personalizados.',
+      color: '#1EC87A',
+      bg: 'rgba(30,200,122,0.1)',
+      badge: 'Meta Business API',
+      time: '15 min',
+    },
+    {
+      id: 'calendar' as ChannelView,
+      icon: '📅',
+      name: 'Google Calendar',
+      description: 'Sincronização de calls e reuniões com o Google Calendar. Cria eventos automáticos.',
+      color: '#F5A623',
+      bg: 'rgba(245,166,35,0.1)',
+      badge: 'Google OAuth',
+      time: '10 min',
+    },
+  ]
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Intro */}
+      <div className="rounded-2xl p-5" style={{ background: 'var(--s2)' }}>
+        <p className="font-semibold text-sm" style={{ color: 'var(--t1)' }}>🎯 Liga os teus canais de comunicação</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--t2)' }}>
+          Cada canal tem um assistente passo a passo. Não precisas de saber programação — só segue as instruções!
+        </p>
+      </div>
+
+      {/* Channel cards */}
+      <div className="grid grid-cols-3 gap-4">
+        {CHANNELS.map(ch => (
+          <div key={ch.id} className="rounded-2xl p-5 flex flex-col gap-4 tonal-hover transition-all cursor-pointer" style={{ background: 'var(--s2)' }}>
+            <div className="flex items-start justify-between">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style={{ background: ch.bg }}>{ch.icon}</div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: ch.bg, color: ch.color }}>{ch.badge}</span>
+            </div>
+            <div>
+              <p className="font-bold text-sm" style={{ color: 'var(--t1)' }}>{ch.name}</p>
+              <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--t2)' }}>{ch.description}</p>
+            </div>
+            <div className="flex items-center gap-1.5 mt-auto">
+              <Clock size={10} style={{ color: 'var(--t3)' }} />
+              <p className="text-[10px]" style={{ color: 'var(--t3)' }}>Configuração em ~{ch.time}</p>
+            </div>
+            <button
+              onClick={() => setView(ch.id)}
+              className="w-full py-2.5 rounded-xl text-sm font-bold transition-opacity hover:opacity-80"
+              style={{ background: ch.color, color: '#0F1318' }}
+            >
+              Configurar →
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /* ─────────────────────── integration card ─────────────────────── */
 
 const OAUTH_URLS: Partial<Record<string, string>> = {
   'meta':             '/api/oauth/meta/connect',
-  'instagram':        '/api/oauth/meta/connect',        // Meta covers Instagram
+  'instagram':        '/api/oauth/meta/connect',
   'google-ads':       '/api/oauth/google/connect?scope=ads',
   'google-calendar':  '/api/oauth/google/connect?scope=calendar',
   'tiktok':           '/api/oauth/tiktok/connect',
@@ -326,7 +1034,6 @@ function PixelCard({ pixel, onCopy }: { pixel: Pixel; onCopy: (id: string) => vo
         {pixel.status === 'active' ? (
           <button
             onClick={() => {
-              // Send a test PageView event via server-side pixel route
               fetch('/api/pixels/events', {
                 method: 'POST',
                 headers: {
@@ -532,7 +1239,6 @@ function GHLSyncPanel() {
 
   return (
     <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: 'var(--s2)' }}>
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{ background: 'rgba(30,200,122,0.1)' }}>
@@ -546,16 +1252,11 @@ function GHLSyncPanel() {
             </div>
           </div>
         </div>
-        <button
-          onClick={resync}
-          className="p-1.5 rounded-lg tonal-hover transition-colors"
-          style={{ color: 'var(--t3)' }}
-        >
+        <button onClick={resync} className="p-1.5 rounded-lg tonal-hover transition-colors" style={{ color: 'var(--t3)' }}>
           <RefreshCw size={12} className={syncing ? 'animate-spin' : ''} />
         </button>
       </div>
 
-      {/* Counters */}
       <div className="grid grid-cols-3 gap-2">
         {GHL_COUNTERS.map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="rounded-xl p-2.5 text-center" style={{ background: 'var(--s1)' }}>
@@ -566,7 +1267,6 @@ function GHLSyncPanel() {
         ))}
       </div>
 
-      {/* Health bar */}
       <div>
         <div className="flex items-center justify-between mb-1">
           <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--t3)' }}>Taxa de sucesso</span>
@@ -580,7 +1280,6 @@ function GHLSyncPanel() {
         </div>
       </div>
 
-      {/* Recent events */}
       <div>
         <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--t3)' }}>Eventos recentes</p>
         <div className="flex flex-col gap-1.5">
@@ -607,7 +1306,6 @@ function GHLSyncPanel() {
         </div>
       </div>
 
-      {/* Webhook URL */}
       <div>
         <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--t3)' }}>Webhook URL</p>
         <div className="flex items-center gap-2 rounded-xl px-2.5 py-2" style={{ background: 'var(--s1)' }}>
@@ -760,7 +1458,6 @@ export default function ConfigPage() {
 
   const handleSync = (id: string) => {
     setSyncingId(id)
-    // Trigger edge function sync for this integration
     const funcMap: Record<string, string> = {
       meta:            'sync-meta-ads',
       instagram:       'sync-meta-ads',
@@ -802,8 +1499,9 @@ export default function ConfigPage() {
     setTimeout(() => setPixelCopied(null), 2000)
   }
 
-  const TABS: { id: ConfigTab; label: string; icon: typeof Settings }[] = [
+  const TABS: { id: ConfigTab; label: string; icon: React.ElementType }[] = [
     { id: 'integracoes', label: 'Integrações', icon: Webhook },
+    { id: 'canais',      label: 'Canais',      icon: Mail },
     { id: 'pixels',      label: 'Pixels & Tags', icon: BarChart2 },
     { id: 'utms',        label: 'UTMs', icon: Target },
   ]
@@ -899,6 +1597,9 @@ export default function ConfigPage() {
           </div>
         </>
       )}
+
+      {/* ── CANAIS TAB ── */}
+      {tab === 'canais' && <CanaisTab />}
 
       {/* ── PIXELS TAB ── */}
       {tab === 'pixels' && (

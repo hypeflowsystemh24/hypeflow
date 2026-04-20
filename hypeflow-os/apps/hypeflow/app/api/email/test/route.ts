@@ -1,20 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 /* ─── POST /api/email/test
-   Validates a Resend API key and sends a test email.
+   Step 1: Validate Resend API key via GET /domains
+   Step 2 (optional): Send a test email if 'to' is provided
 ─── */
 export async function POST(req: NextRequest) {
-  const { resend_api_key, to, from_name, from_email } = await req.json()
+  const { resend_api_key, to, from_name } = await req.json()
 
   if (!resend_api_key) {
-    return NextResponse.json({ ok: false, error: 'API key em falta' }, { status: 400 })
+    return NextResponse.json({ ok: false, error: 'API Key em falta. Volta ao passo 2 e cola a chave.' }, { status: 400 })
   }
 
-  const dest      = to         ?? from_email ?? 'test@hypeflow.pt'
-  const fromName  = from_name  ?? 'HYPE Flow'
-  /* Use Resend's default domain for testing — custom domains require verification */
-  const fromAddr  = 'onboarding@resend.dev'
+  /* Validate key by calling Resend account endpoint */
+  const check = await fetch('https://api.resend.com/domains', {
+    headers: { Authorization: `Bearer ${resend_api_key}` },
+  })
 
+  if (!check.ok) {
+    const err = await check.text()
+    let friendly = 'API Key inválida. Verifica se copiaste correctamente (começa com re_).'
+    if (err.includes('invalid_api_key') || check.status === 401) friendly = 'API Key inválida. Verifica se copiaste correctamente (começa com re_).'
+    if (err.includes('forbidden')       || check.status === 403) friendly = 'Sem permissões. Verifica as permissões da API Key no Resend.'
+    return NextResponse.json({ ok: false, error: friendly }, { status: 400 })
+  }
+
+  /* If no test email requested, key is valid — done */
+  if (!to) return NextResponse.json({ ok: true, test_sent: false })
+
+  /* Send test email from Resend's default domain (always works on free plan) */
+  const fromName = from_name ?? 'HYPE Flow'
   const html = `
     <div style="font-family:sans-serif;max-width:480px;margin:40px auto;background:#141B24;border-radius:16px;overflow:hidden">
       <div style="background:#D1FF00;padding:32px;text-align:center">
@@ -27,29 +41,18 @@ export async function POST(req: NextRequest) {
       </div>
     </div>`
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization:  `Bearer ${resend_api_key}`,
-      'Content-Type': 'application/json',
-    },
+  const send = await fetch('https://api.resend.com/emails', {
+    method:  'POST',
+    headers: { Authorization: `Bearer ${resend_api_key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from:    `${fromName} <${fromAddr}>`,
-      to:      [dest],
+      from:    `${fromName} <onboarding@resend.dev>`,
+      to:      [to],
       subject: '✅ Teste HYPE Flow — Email a funcionar!',
       html,
     }),
   })
 
-  if (!res.ok) {
-    const err = await res.text()
-    let friendly = 'Chave inválida ou sem permissões.'
-    if (err.includes('invalid_api_key'))     friendly = 'API Key inválida. Verifique se copiou correctamente.'
-    if (err.includes('validation_error'))    friendly = 'O endereço de email de destino é inválido.'
-    if (err.includes('not_allowed'))         friendly = 'Domínio não verificado no Resend. Verifique o seu domínio.'
-    return NextResponse.json({ ok: false, error: friendly }, { status: 400 })
-  }
-
-  const data = await res.json()
-  return NextResponse.json({ ok: true, id: data.id })
+  /* Test email failure is non-blocking — key is already validated */
+  const data = send.ok ? await send.json() : null
+  return NextResponse.json({ ok: true, test_sent: send.ok, id: data?.id })
 }

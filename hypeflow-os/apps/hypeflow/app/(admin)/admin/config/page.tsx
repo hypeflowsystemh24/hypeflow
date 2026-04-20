@@ -307,7 +307,7 @@ function EmailWizard({ onBack }: { onBack: () => void }) {
       const res = await fetch('/api/email/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ api_key: apiKey, from_email: fromEmail, from_name: fromName, test_email: testEmail || undefined }),
+        body: JSON.stringify({ resend_api_key: apiKey, from_email: fromEmail, from_name: fromName, to: testEmail || undefined }),
       })
       const data = await res.json()
       if (!data.ok) { setError(data.error ?? 'Erro desconhecido'); return }

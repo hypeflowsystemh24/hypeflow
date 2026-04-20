@@ -144,6 +144,19 @@ export const leadsRouter = createTRPCRouter({
         })
       }
 
+      /* Fire workflow engine — lead_created trigger (non-blocking) */
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hypeflow-os.vercel.app'
+      fetch(`${appUrl}/api/workflows/trigger`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          trigger_type: 'lead_created',
+          agency_id:    input.agencyId,
+          lead_id:      data.id,
+          lead:         data,
+        }),
+      }).catch(() => {})
+
       return data
     }),
 

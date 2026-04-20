@@ -23,11 +23,14 @@ async function getEmailConfig(agencyId: string) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { agencyId, to, subject, html, from_name, from_email } = body
+  const { agencyId, to, subject, html, message, from_name, from_email } = body
 
-  if (!agencyId || !to || !subject || !html) {
-    return NextResponse.json({ error: 'Campos obrigatórios: agencyId, to, subject, html' }, { status: 400 })
+  if (!agencyId || !to || !subject || (!html && !message)) {
+    return NextResponse.json({ error: 'Campos obrigatórios: agencyId, to, subject, html ou message' }, { status: 400 })
   }
+
+  /* Accept plain text message as fallback to html */
+  const htmlBody = html ?? `<div style="font-family:sans-serif;line-height:1.6;color:#1a1a1a">${String(message).replace(/\n/g,'<br>')}</div>`
 
   /* Load config from DB or fall back to env vars */
   const cfg = await getEmailConfig(agencyId)
@@ -47,7 +50,7 @@ export async function POST(req: NextRequest) {
       from: `${fromName} <${fromAddr}>`,
       to:   Array.isArray(to) ? to : [to],
       subject,
-      html,
+      html: htmlBody,
     }),
   })
 

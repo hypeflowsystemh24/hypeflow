@@ -3,7 +3,7 @@
 import { X } from 'lucide-react'
 import type {
   WFNode, WFNodeType,
-  TriggerConfig, WhatsappConfig, EmailConfig, DelayConfig, ConditionConfig, EndConfig,
+  TriggerConfig, WhatsappConfig, EmailConfig, SmsConfig, VoiceConfig, DelayConfig, ConditionConfig, EndConfig,
 } from './types'
 
 /* ─── small field components ─── */
@@ -174,6 +174,47 @@ function EmailForm({ cfg, onChange }: { cfg: EmailConfig; onChange: (c: EmailCon
   )
 }
 
+function SmsForm({ cfg, onChange }: { cfg: SmsConfig; onChange: (c: SmsConfig) => void }) {
+  return (
+    <>
+      <Field label="Mensagem SMS">
+        <Textarea
+          value={cfg.message}
+          onChange={v => onChange({ ...cfg, message: v })}
+          placeholder="Olá {{full_name}}, tem uma mensagem para si!"
+          rows={3}
+        />
+      </Field>
+      <p className="text-[10px] px-1" style={{ color: 'var(--t3)' }}>
+        Suporta variáveis: {'{{full_name}}'}, {'{{phone}}'}, {'{{score}}'}
+      </p>
+    </>
+  )
+}
+
+function VoiceForm({ cfg, onChange }: { cfg: VoiceConfig; onChange: (c: VoiceConfig) => void }) {
+  return (
+    <>
+      <Field label="Script de voz">
+        <Textarea
+          value={cfg.script}
+          onChange={v => onChange({ ...cfg, script: v })}
+          placeholder="Olá {{full_name}}, está disponível para uma conversa rápida?"
+          rows={4}
+        />
+      </Field>
+      <Field label="Tentativas máximas">
+        <Input
+          type="number"
+          value={String(cfg.max_attempts ?? 3)}
+          onChange={v => onChange({ ...cfg, max_attempts: Math.max(1, Number(v)) })}
+          placeholder="3"
+        />
+      </Field>
+    </>
+  )
+}
+
 function DelayForm({ cfg, onChange }: { cfg: DelayConfig; onChange: (c: DelayConfig) => void }) {
   return (
     <div className="flex gap-2">
@@ -329,12 +370,11 @@ export function NodeConfigPanel({ node, onUpdate, onClose, onDelete }: Props) {
         {type === 'trigger'   && <TriggerForm   cfg={node.data.config as TriggerConfig}   onChange={updateConfig} />}
         {type === 'whatsapp'  && <WhatsappForm  cfg={node.data.config as WhatsappConfig}  onChange={updateConfig} />}
         {type === 'email'     && <EmailForm     cfg={node.data.config as EmailConfig}     onChange={updateConfig} />}
+        {type === 'sms'       && <SmsForm       cfg={node.data.config as SmsConfig}       onChange={updateConfig} />}
+        {type === 'voice'     && <VoiceForm     cfg={node.data.config as VoiceConfig}     onChange={updateConfig} />}
         {type === 'delay'     && <DelayForm     cfg={node.data.config as DelayConfig}     onChange={updateConfig} />}
         {type === 'condition' && <ConditionForm cfg={node.data.config as ConditionConfig} onChange={updateConfig} />}
         {type === 'end'       && <EndForm       cfg={node.data.config as EndConfig}       onChange={updateConfig} />}
-        {(type === 'sms' || type === 'voice') && (
-          <p className="text-xs" style={{ color: 'var(--t3)' }}>Configuração em breve.</p>
-        )}
       </div>
 
       {/* Delete */}

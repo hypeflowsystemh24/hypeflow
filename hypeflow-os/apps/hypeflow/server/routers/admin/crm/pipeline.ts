@@ -226,10 +226,25 @@ export const pipelineRouter = createTRPCRouter({
           tags: mergedTags,
         })
         .eq('id', input.leadId)
-        .select('id, pipeline_stage_id, stage_entered_at')
+        .select('id, pipeline_stage_id, stage_entered_at, agency_id, full_name, email, phone, score, temperature')
         .single()
 
       if (error) throw new Error(error.message)
+
+      /* Fire stage_changed workflow trigger (non-blocking) */
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hypeflow-os.vercel.app'
+      fetch(`${appUrl}/api/workflows/trigger`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trigger_type: 'stage_changed',
+          agency_id:    data.agency_id,
+          lead_id:      data.id,
+          lead:         data,
+          extra:        { stage_id: input.stageId, stage_name: stage?.name },
+        }),
+      }).catch(() => {})
+
       return data
     }),
 

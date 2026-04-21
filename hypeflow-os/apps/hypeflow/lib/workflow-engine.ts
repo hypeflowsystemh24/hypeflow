@@ -1,7 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type {
   WFNode, WFEdge,
-  TriggerConfig, WhatsappConfig, EmailConfig, DelayConfig, ConditionConfig,
+  TriggerConfig, WhatsappConfig, EmailConfig, DelayConfig, ConditionConfig, SmsConfig, VoiceConfig,
 } from '@/app/(admin)/admin/automacoes/disparos/sequencias/components/types'
 
 /* ─────────────────────────────────────────────
@@ -88,6 +88,28 @@ async function executeEmail(node: WFNode, ctx: RunContext): Promise<void> {
   await log(ctx.sb, ctx.runId, node.id, ok ? 'ok' : 'error', ok ? `Email enviado para ${email}` : `Erro ao enviar email: ${await res.text()}`)
 }
 
+async function executeSms(node: WFNode, ctx: RunContext): Promise<void> {
+  const cfg   = node.data.config as SmsConfig
+  const phone = String(ctx.lead.phone ?? ctx.lead.telefone ?? '')
+  if (!phone) { await log(ctx.sb, ctx.runId, node.id, 'skipped', 'Lead sem número de telefone'); return }
+
+  const message = resolveVariables(cfg.message, ctx.lead)
+
+  /* MVP: log SMS intent — integrate Twilio/Vonage here when configured */
+  await log(ctx.sb, ctx.runId, node.id, 'ok', `SMS agendado para ${phone}: ${message.slice(0, 50)}…`)
+}
+
+async function executeVoice(node: WFNode, ctx: RunContext): Promise<void> {
+  const cfg   = node.data.config as VoiceConfig
+  const phone = String(ctx.lead.phone ?? ctx.lead.telefone ?? '')
+  if (!phone) { await log(ctx.sb, ctx.runId, node.id, 'skipped', 'Lead sem número de telefone'); return }
+
+  const script = resolveVariables(cfg.script, ctx.lead)
+
+  /* MVP: log voice intent — integrate VAPI/Twilio TwiML here when configured */
+  await log(ctx.sb, ctx.runId, node.id, 'ok', `Chamada voz agendada para ${phone}: ${script.slice(0, 50)}…`)
+}
+
 async function executeDelay(node: WFNode, ctx: RunContext): Promise<void> {
   const cfg = node.data.config as DelayConfig
   /* MVP: log delay but don't actually wait — async scheduling is a future enhancement */
@@ -121,6 +143,14 @@ async function traverseNode(node: WFNode, nodes: WFNode[], edges: WFEdge[], ctx:
 
     case 'email':
       await executeEmail(node, ctx)
+      break
+
+    case 'sms':
+      await executeSms(node, ctx)
+      break
+
+    case 'voice':
+      await executeVoice(node, ctx)
       break
 
     case 'delay':

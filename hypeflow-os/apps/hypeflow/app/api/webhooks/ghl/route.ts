@@ -160,6 +160,28 @@ async function handleFormSubmitted(
     })
   }
 
+  /* Fire form_submitted workflow trigger (non-blocking) */
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hypeflow-os.vercel.app'
+  const { data: lead } = await supabase
+    .from('leads')
+    .select('id, full_name, email, phone, score')
+    .eq('ghl_contact_id', c.id)
+    .eq('agency_id', agencyId)
+    .maybeSingle()
+
+  if (lead) {
+    fetch(`${appUrl}/api/workflows/trigger`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        trigger_type: 'form_submitted',
+        agency_id:    agencyId,
+        lead_id:      lead.id,
+        lead:         { ...lead, ...payload.formData },
+      }),
+    }).catch(() => {})
+  }
+
   return { processed: 'form.submitted' }
 }
 

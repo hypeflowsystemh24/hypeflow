@@ -269,6 +269,24 @@ export const leadsRouter = createTRPCRouter({
 
       if (error) throw new Error(error.message)
 
+      /* Fire score_threshold workflow trigger if score crossed a notable threshold (non-blocking) */
+      const prevScore = lead.score ?? 0
+      const crossed = (finalScore >= 80 && prevScore < 80) || (finalScore >= 70 && prevScore < 70) || (finalScore >= 40 && prevScore < 40)
+      if (crossed) {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hypeflow-os.vercel.app'
+        fetch(`${appUrl}/api/workflows/trigger`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trigger_type: 'score_threshold',
+            agency_id:    data.agency_id,
+            lead_id:      data.id,
+            lead:         data,
+            extra:        { score: finalScore, prev_score: prevScore },
+          }),
+        }).catch(() => {})
+      }
+
       return {
         lead: data,
         scoreBreakdown: {
